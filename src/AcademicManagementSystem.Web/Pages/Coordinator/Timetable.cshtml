@@ -1,0 +1,308 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Coordinator.TimetableModel
+@{
+    ViewData["Title"] = "Timetable optimizer";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Coordinator workspace</p>
+        <h1>Timetable optimizer</h1>
+        <p>
+            The system generates draft allocations using assigned lecturers,
+            available rooms, capacity, study mode, and student-conflict checks.
+            Review drafts before publishing the timetable.
+        </p>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="/Coordinator/Index">
+        Back to coordinator workspace
+    </a>
+</section>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<section class="summary-metric-grid">
+    <article class="metric-card">
+        <span>Total allocations</span>
+        <strong>@Model.Entries.Count</strong>
+    </article>
+
+    <article class="metric-card">
+        <span>Courses awaiting allocation</span>
+        <strong>@Model.AwaitingCourses.Count</strong>
+    </article>
+
+    <article class="metric-card">
+        <span>Constraint checks</span>
+        <strong>@(Model.Issues.Count == 0 ? "Pass" : $"{Model.Issues.Count} issue(s)")</strong>
+    </article>
+</section>
+
+@if (Model.AwaitingCourses.Count > 0)
+{
+    <section class="card-surface decision-card">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Automatic timetable generation</p>
+                <h2>Generate draft allocations</h2>
+            </div>
+            <span class="status-pill status-info">Coordinator review required</span>
+        </div>
+
+        <p class="muted-copy">
+            The generator considers only lecturers formally assigned to each course.
+            It prevents room, lecturer, capacity, and normal student conflicts.
+            Carry-course conflicts are minimised after these main constraints.
+        </p>
+
+        <p>
+            <strong>Awaiting:</strong>
+            @string.Join(", ", Model.AwaitingCourses.Select(course => course.Code))
+        </p>
+
+        <form method="post" asp-page-handler="Generate">
+            <button class="btn btn-primary" type="submit">
+                Generate draft timetable
+            </button>
+        </form>
+    </section>
+
+    <section class="card-surface registration-summary">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Manual draft allocation</p>
+                <h2>Choose a timetable entry manually</h2>
+            </div>
+        </div>
+
+        <p class="muted-copy">
+            Select a course first. The lecturer list will show only lecturers
+            formally assigned to that course.
+        </p>
+
+        <form method="post" asp-page-handler="Add" class="coordinator-form timetable-form">
+            <div>
+                <label asp-for="CourseId">Course</label>
+                <select asp-for="CourseId" class="form-select" id="CourseId">
+                    @foreach (var course in Model.AwaitingCourses)
+                    {
+                        <option value="@course.Id">
+                            @course.Code — @course.Title
+                            (@course.ExpectedEnrollment expected@(course.StudyMode is null ? "" : $", {course.StudyMode.Name}"))
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label asp-for="LecturerId">Assigned lecturer</label>
+                <select asp-for="LecturerId" class="form-select" id="LecturerId">
+                    @foreach (var lecturer in Model.Lecturers)
+                    {
+                        var assignedCourseIds = Model.CourseLecturerAssignments
+                            .Where(assignment => assignment.LecturerId == lecturer.Id)
+                            .Select(assignment => assignment.CourseId);
+
+                        <option value="@lecturer.Id"
+                                data-course-ids="@string.Join(",", assignedCourseIds)">
+                            @lecturer.FullName
+                        </option>
+                    }
+                </select>
+
+                <small class="text-danger d-none" id="noAssignedLecturer">
+                    No lecturer has been assigned to this course. Go to
+                    Course–Lecturer Assignments first.
+                </small>
+            </div>
+
+            <div>
+                <label asp-for="RoomId">Room</label>
+                <select asp-for="RoomId" class="form-select">
+                    @foreach (var room in Model.Rooms)
+                    {
+                        <option value="@room.Id">
+                            @room.Code · capacity @room.Capacity
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label asp-for="SlotValue">Teaching period</label>
+                <select asp-for="SlotValue" class="form-select">
+                    @foreach (var slot in Model.Slots)
+                    {
+                        <option value="@slot.Value">@slot.Label</option>
+                    }
+                </select>
+            </div>
+
+            <button class="btn btn-primary" type="submit" id="createDraftButton">
+                Validate and create draft
+            </button>
+        </form>
+    </section>
+}
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Timetable review</p>
+            <h2>@Model.Settings.Semester · @Model.Settings.AcademicYear</h2>
+        </div>
+
+        <span class="status-pill @(Model.Issues.Count == 0 ? "status-success" : "status-danger")">
+            @(Model.Issues.Count == 0 ? "Constraint checks passed" : "Review required")
+        </span>
+    </div>
+
+    @if (Model.Entries.Any(entry => entry.Status == "Draft"))
+    {
+        <div class="alert alert-warning">
+            Draft allocations are not visible as an official timetable until you publish them.
+        </div>
+
+        <form method="post" asp-page-handler="Publish" class="mb-3">
+            <button class="btn btn-success" type="submit">
+                Publish approved draft timetable
+            </button>
+        </form>
+    }
+
+    @if (Model.Entries.Count == 0)
+    {
+        <p class="muted-copy">
+            No allocations exist yet. Generate a draft timetable after adding courses,
+            rooms, lecturers, and course–lecturer assignments.
+        </p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Day and time</th>
+                        <th>Course</th>
+                        <th>Lecturer</th>
+                        <th>Room</th>
+                        <th>Capacity</th>
+                        <th>Status</th>
+                        <th>Review</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model.Entries)
+                    {
+                        <tr>
+                            <td><strong>@entry.ScheduleLabel</strong></td>
+                            <td>
+                                <strong>@entry.Course.Code</strong><br />
+                                <span class="muted-copy">@entry.Course.Title</span>
+                            </td>
+                            <td>@entry.Lecturer.FullName</td>
+                            <td>@entry.Room.Code</td>
+                            <td>@entry.Course.ExpectedEnrollment / @entry.Room.Capacity</td>
+                            <td>
+                                <span class="status-pill @(entry.Status == "Published" ? "status-success" : "status-warning")">
+                                    @entry.Status
+                                </span>
+                            </td>
+                            <td>
+                                @if (entry.Status == "Draft")
+                                {
+                                    <form method="post" asp-page-handler="DeleteDraft">
+                                        <input type="hidden" name="EntryId" value="@entry.Id" />
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">
+                                            Remove draft
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="muted-copy">Published</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Constraint report</p>
+            <h2>Timetable health check</h2>
+        </div>
+    </div>
+
+    @if (Model.Issues.Count == 0)
+    {
+        <p class="muted-copy">
+            No room, lecturer, capacity, study-mode, or registered-student conflicts
+            are currently detected.
+        </p>
+    }
+    else
+    {
+        <ul class="reason-list">
+            @foreach (var issue in Model.Issues)
+            {
+                <li><strong>@issue.Category:</strong> @issue.Message</li>
+            }
+        </ul>
+    }
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const courseSelect = document.getElementById("CourseId");
+        const lecturerSelect = document.getElementById("LecturerId");
+        const noAssignedLecturer = document.getElementById("noAssignedLecturer");
+        const createDraftButton = document.getElementById("createDraftButton");
+
+        function filterLecturersForCourse() {
+            if (!courseSelect || !lecturerSelect) {
+                return;
+            }
+
+            const selectedCourseId = courseSelect.value;
+            let matchingLecturerFound = false;
+
+            Array.from(lecturerSelect.options).forEach(option => {
+                const courseIds = (option.dataset.courseIds || "").split(",");
+                const isAssigned = courseIds.includes(selectedCourseId);
+
+                option.hidden = !isAssigned;
+                option.disabled = !isAssigned;
+
+                if (isAssigned && !matchingLecturerFound) {
+                    lecturerSelect.value = option.value;
+                    matchingLecturerFound = true;
+                }
+            });
+
+            noAssignedLecturer.classList.toggle("d-none", matchingLecturerFound);
+            createDraftButton.disabled = !matchingLecturerFound;
+        }
+
+        if (courseSelect) {
+            courseSelect.addEventListener("change", filterLecturersForCourse);
+            filterLecturersForCourse();
+        }
+    </script>
+}

@@ -1,0 +1,64 @@
+@page
+@model AcademicManagementSystem.Web.Pages.StudentPortal.AttendanceModel
+@{
+    ViewData["Title"] = "My attendance";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Student portal</p>
+        <h1>My attendance</h1>
+        <p>Only attendance recorded against your own student ID is displayed here.</p>
+    </div>
+</section>
+
+<section class="metric-grid">
+    <article class="metric-card"><span>Attendance</span><strong>@(Model.TotalAttendance?.AttendancePercentage is null ? "—" : $"{Model.TotalAttendance.AttendancePercentage:N0}%")</strong></article>
+    <article class="metric-card"><span>Present / late</span><strong>@(Model.TotalAttendance?.AttendedSessions ?? 0)</strong></article>
+    <article class="metric-card"><span>Absent</span><strong>@(Model.TotalAttendance?.MissedSessions ?? 0)</strong></article>
+</section>
+
+@if (Model.Records.Count == 0)
+{
+    <section class="card-surface empty-state">
+        <h2>No attendance records yet</h2>
+        <p>Attendance will appear after a coordinator creates a session and records your student ID.</p>
+    </section>
+}
+else
+{
+    <section class="split-grid">
+        <article class="card-surface">
+            <p class="section-kicker">By course</p>
+            <h2>Attendance summary</h2>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead><tr><th>Course</th><th>Sessions</th><th>Attendance</th></tr></thead>
+                    <tbody>
+                        @foreach (var summary in Model.CourseSummaries)
+                        {
+                            <tr>
+                                <td><strong>@summary.CourseCode</strong><br /><span class="muted-copy">@summary.CourseTitle</span></td>
+                                <td>@summary.Attendance.TotalSessions</td>
+                                <td>@(summary.Attendance.AttendancePercentage is null ? "—" : $"{summary.Attendance.AttendancePercentage:N0}%")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </article>
+        <article class="card-surface">
+            <p class="section-kicker">Session record</p>
+            <h2>Recent entries</h2>
+            <ul class="plain-list">
+                @foreach (var record in Model.Records)
+                {
+                    <li>
+                        <strong>@record.AttendanceSession.Course.Code</strong> · @record.AttendanceSession.Topic<br />
+                        <span class="muted-copy">@record.AttendanceSession.SessionDate.ToString("dd MMM yyyy") · @record.Status</span>
+                    </li>
+                }
+            </ul>
+        </article>
+    </section>
+}

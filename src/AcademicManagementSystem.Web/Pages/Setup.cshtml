@@ -1,0 +1,45 @@
+@page
+@model SetupModel
+@{
+    ViewData["Title"] = "Initial administrator setup";
+}
+
+<section class="auth-shell">
+    <article class="auth-card">
+        <p class="section-kicker">First-time setup</p>
+        <h1>Create the administrator account</h1>
+        <p class="muted-copy">
+            This new version starts with no fictional students, courses, invoices, or payments.
+            The first administrator securely configures the system.
+        </p>
+
+        <form method="post" class="stack-form">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div>
+                <label asp-for="Input.FullName" class="form-label"></label>
+                <input asp-for="Input.FullName" class="form-control" autocomplete="name" />
+                <span asp-validation-for="Input.FullName" class="text-danger"></span>
+            </div>
+            <div>
+                <label asp-for="Input.Email" class="form-label"></label>
+                <input asp-for="Input.Email" class="form-control" autocomplete="email" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div>
+                <label asp-for="Input.Password" class="form-label"></label>
+                <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+            <div>
+                <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+            </div>
+            <button class="btn btn-primary w-100" type="submit">Create administrator account</button>
+        </form>
+    </article>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,132 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Coordinator.IndexModel
+@{
+    ViewData["Title"] = "Coordinator workspace";
+}
+
+<section class="hero-panel coordinator-hero">
+    <div>
+        <p class="eyebrow">Coordinator workspace · @Model.Settings.AcademicYear · @Model.Settings.Semester</p>
+        <h1>Manage the academic flow</h1>
+        <p class="hero-copy">
+            Review student eligibility, timetable constraints, attendance indicators, and result publication
+            from one prototype workspace.
+        </p>
+    </div>
+    <div class="prototype-note">
+        <strong>Safe prototype</strong>
+        <span>Records are entered by the administrator for this prototype. The system does not connect to a live CBU portal or payment system.</span>
+    </div>
+</section>
+
+<section class="summary-metric-grid coordinator-metrics">
+    <article class="metric-card">
+        <span>Students</span>
+        <strong>@Model.StudentCount</strong>
+    </article>
+    <article class="metric-card">
+        <span>Confirmed registrations</span>
+        <strong>@Model.ConfirmedRegistrationCount</strong>
+    </article>
+    <article class="metric-card">
+        <span>Published timetable entries</span>
+        <strong>@Model.TimetableEntryCount</strong>
+    </article>
+    <article class="metric-card">
+        <span>Average attendance</span>
+        <strong>@(Model.AverageAttendance is null ? "—" : $"{Model.AverageAttendance:N0}%")</strong>
+    </article>
+</section>
+
+<section class="workspace-grid">
+    <a class="workspace-card" asp-page="/Coordinator/Students">
+        <span class="workspace-icon">01</span>
+        <strong>Student oversight</strong>
+        <span>Review eligibility, payments, registrations, and exception decisions.</span>
+    </a>
+    @if (User.IsInRole("Administrator"))
+    {
+    <a class="workspace-card" asp-page="/Admin/Finance">
+        <span class="workspace-icon">02</span>
+        <strong>Finance records</strong>
+        <span>Review invoices and record confirmed prototype payment information.</span>
+    </a>
+    }
+    <a class="workspace-card" asp-page="/Coordinator/Timetable">
+        <span class="workspace-icon">03</span>
+        <strong>Timetable optimizer</strong>
+        <span>Allocate rooms and lecturers while checking capacity and clashes.</span>
+    </a>
+    <a class="workspace-card" asp-page="/Coordinator/Attendance">
+        <span class="workspace-icon">04</span>
+        <strong>Digital attendance</strong>
+        <span>Create sessions and record attendance using a student ID.</span>
+    </a>
+    <a class="workspace-card" asp-page="/Coordinator/Monitoring">
+        <span class="workspace-icon">05</span>
+        <strong>Academic monitoring</strong>
+        <span>Identify students who need early attendance or performance support.</span>
+    </a>
+    <a class="workspace-card" asp-page="/Coordinator/Results">
+        <span class="workspace-icon">06</span>
+        <strong>Result publication</strong>
+        <span>Enter, review, and publish result batches for the student portal.</span>
+    </a>
+</section>
+
+<section class="dashboard-grid coordinator-bottom">
+    <article class="card-surface">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Early warning</p>
+                <h2>Students needing review</h2>
+            </div>
+            <a class="text-link" asp-page="/Coordinator/Monitoring">Open monitoring</a>
+        </div>
+        @if (Model.AtRiskStudents.Count == 0)
+        {
+            <p class="muted-copy">No students meet the current risk thresholds.</p>
+        }
+        else
+        {
+            <ul class="simple-list">
+                @foreach (var assessment in Model.AtRiskStudents.Take(4))
+                {
+                    <li>
+                        <strong>@assessment.StudentName</strong>
+                        <span>@assessment.StudentNumber · @assessment.Level risk · @assessment.Reasons.First()</span>
+                    </li>
+                }
+            </ul>
+        }
+    </article>
+
+    <article class="card-surface">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Timetable health</p>
+                <h2>@(Model.TimetableIssues.Count == 0 ? "No conflicts detected" : $"{Model.TimetableIssues.Count} issue(s) detected")</h2>
+            </div>
+            <a class="text-link" asp-page="/Coordinator/Timetable">Review timetable</a>
+        </div>
+        @if (Model.TimetableIssues.Count == 0)
+        {
+            <p class="muted-copy">
+                Current published entries pass the room, lecturer, capacity, and registered-student checks.
+                @if (Model.PendingTimetableCount > 0)
+                {
+                    <span>@Model.PendingTimetableCount active course(s) still await allocation.</span>
+                }
+            </p>
+        }
+        else
+        {
+            <ul class="reason-list">
+                @foreach (var issue in Model.TimetableIssues.Take(3))
+                {
+                    <li>@issue.Message</li>
+                }
+            </ul>
+        }
+    </article>
+</section>

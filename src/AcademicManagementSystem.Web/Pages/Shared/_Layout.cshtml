@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Intelligent Academic Management System with Timetable Optimization prototype." />
+    <title>@ViewData["Title"] · Academic Management System</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AcademicManagementSystem.Web.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <div class="container app-container header-content">
+            <a class="brand" asp-page="/Index">
+                <span class="brand-mark">AM</span>
+                <span>
+                    <strong>Academic Management System</strong>
+                    <small>Intelligent academic workflow prototype</small>
+                </span>
+            </a>
+            <nav class="site-nav" aria-label="Primary navigation">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @if (User.IsInRole("Administrator"))
+                    {
+                        <a asp-page="/Admin/Index">Administration</a>
+                        <a asp-page="/Admin/Students">Students</a>
+                        <a asp-page="/Admin/Academic">Academic setup</a>
+                        <a asp-page="/Admin/Finance">Finance</a>
+                        <a asp-page="/Admin/Users">Staff accounts</a>
+                    }
+                    @if (User.IsInRole("Coordinator") || User.IsInRole("Administrator"))
+                    {
+                        <a asp-page="/Coordinator/Index">Coordinator</a>
+                        <a asp-page="/Coordinator/Timetable">Timetable</a>
+                    }
+                    @if (User.IsInRole("Student"))
+                    {
+                        <a asp-page="/Student/Index">My dashboard</a>
+                        <a asp-page="/Student/Registration">Registration</a>
+                        <a asp-page="/Student/Invoices">Invoices</a>
+                    }
+                    <form asp-page="/Account/Logout" method="post" class="logout-form">
+                        <button type="submit" class="nav-button">Sign out</button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-page="/Account/Login">Sign in</a>
+                }
+                <span class="prototype-badge">Prototype</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="app-main">
+        <div class="container app-container">
+            @if (TempData["Success"] is string success)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @success
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] is string error)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @error
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @RenderBody()
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container app-container">
+            <span>CS301 Group Project · 2026</span>
+            <span>Prototype only · no live CBU or payment-system integration</span>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

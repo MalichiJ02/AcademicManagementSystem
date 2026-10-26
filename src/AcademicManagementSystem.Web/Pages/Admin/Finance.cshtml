@@ -1,0 +1,88 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Admin.FinanceModel
+@{
+    ViewData["Title"] = "Finance records";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Administrator workspace</p>
+        <h1>Invoice and payment records</h1>
+        <p>Students generate their own invoices. Administrators record confirmed payment information in this safe prototype.</p>
+    </div>
+</section>
+
+@if (Model.Invoices.Count == 0)
+{
+    <section class="card-surface empty-state">
+        <h2>No invoices yet</h2>
+        <p>After a student signs in, they can generate an invoice based on their programme and study mode.</p>
+    </section>
+}
+else
+{
+    <section class="card-surface form-card">
+        <p class="section-kicker">Record a payment</p>
+        <h2>Update a confirmed payment record</h2>
+        <form method="post" asp-page-handler="RecordPayment" class="form-grid">
+            <div asp-validation-summary="ModelOnly" class="text-danger form-grid-full"></div>
+            <div class="form-grid-full">
+                <label asp-for="Payment.InvoiceId" class="form-label">Invoice</label>
+                <select asp-for="Payment.InvoiceId" class="form-select">
+                    <option value="0">Choose invoice</option>
+                    @foreach (var invoice in Model.Invoices.Where(item => item.Balance > 0m))
+                    {
+                        <option value="@invoice.Id">@invoice.InvoiceNumber · @invoice.Student.StudentNumber · balance ZMW @invoice.Balance.ToString("N2")</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="Payment.Amount" class="form-label">Amount received (ZMW)</label>
+                <input asp-for="Payment.Amount" class="form-control" type="number" min="0.01" step="0.01" />
+            </div>
+            <div>
+                <label asp-for="Payment.Reference" class="form-label">Payment reference</label>
+                <input asp-for="Payment.Reference" class="form-control" placeholder="Receipt or portal reference" />
+            </div>
+            <div class="form-grid-full">
+                <label asp-for="Payment.Note" class="form-label">Note (optional)</label>
+                <input asp-for="Payment.Note" class="form-control" placeholder="Record-only; no real payment is processed here." />
+            </div>
+            <div class="form-grid-full"><button class="btn btn-primary" type="submit">Record payment</button></div>
+        </form>
+    </section>
+
+    <section class="card-surface">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">All invoices</p>
+                <h2>@Model.Invoices.Count invoice(s)</h2>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr><th>Invoice</th><th>Student</th><th>Programme / mode</th><th>Paid</th><th>Balance</th><th>Payment account</th><th>History</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var invoice in Model.Invoices)
+                    {
+                        <tr>
+                            <td><strong>@invoice.InvoiceNumber</strong><br /><span class="muted-copy">@invoice.AcademicYear · @invoice.Semester</span></td>
+                            <td>@invoice.Student.StudentNumber<br /><span class="muted-copy">@invoice.Student.FullName</span></td>
+                            <td>@invoice.ProgrammeName<br /><span class="muted-copy">@invoice.StudyModeName</span></td>
+                            <td>ZMW @invoice.AmountPaid.ToString("N2") / @invoice.TotalAmount.ToString("N2")<br /><span class="status-pill status-info">@invoice.PaymentPercentage.ToString("N0")%</span></td>
+                            <td><strong>ZMW @invoice.Balance.ToString("N2")</strong></td>
+                            <td>@invoice.PaymentAccount</td>
+                            <td>@invoice.Payments.Count record(s)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

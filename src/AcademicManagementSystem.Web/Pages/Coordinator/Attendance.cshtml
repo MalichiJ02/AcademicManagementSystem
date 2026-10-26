@@ -1,0 +1,160 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Coordinator.AttendanceModel
+@{
+    ViewData["Title"] = "Digital attendance";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Coordinator workspace</p>
+        <h1>Digital attendance</h1>
+        <p>Create a teaching session for the current academic period, then record attendance using a student-ID number and confirmed course registration.</p>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="/Coordinator/Index">Back to coordinator workspace</a>
+</section>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<section class="card-surface">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Session setup</p>
+            <h2>Create an attendance session</h2>
+        </div>
+    </div>
+    <form method="post" asp-page-handler="CreateSession" class="coordinator-form">
+        <div>
+            <label asp-for="NewCourseId">Course</label>
+            <select asp-for="NewCourseId" class="form-select">
+                @foreach (var course in Model.Courses)
+                {
+                    <option value="@course.Id">@course.Code — @course.Title</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="NewSessionDate">Date</label>
+            <input asp-for="NewSessionDate" class="form-control" type="date" />
+        </div>
+        <div class="form-span-two">
+            <label asp-for="NewSessionTopic">Topic</label>
+            <input asp-for="NewSessionTopic" class="form-control" placeholder="For example: Project risk management" />
+        </div>
+        <button class="btn btn-primary" type="submit">Create session</button>
+    </form>
+</section>
+
+<section class="student-selector card-surface compact-selector">
+    <div>
+        <p class="section-kicker">Session selection</p>
+        <h2>Choose a teaching session</h2>
+    </div>
+    <form method="get" class="selector-form">
+        <label asp-for="SessionId">Session</label>
+        <select asp-for="SessionId" class="form-select">
+            @foreach (var session in Model.Sessions)
+            {
+                <option value="@session.Id">@session.SessionDate.ToString("dd MMM") · @session.Course.Code · @session.Topic</option>
+            }
+        </select>
+        <button class="btn btn-primary" type="submit">Load session</button>
+    </form>
+</section>
+
+@if (Model.SelectedSession is null)
+{
+    <section class="card-surface empty-state">
+        <h2>No attendance session selected</h2>
+        <p>Create or choose a session to record attendance.</p>
+    </section>
+}
+else
+{
+    <section class="attendance-overview card-surface">
+        <div>
+            <p class="section-kicker">@Model.SelectedSession.SessionDate.ToString("dd MMMM yyyy")</p>
+            <h2>@Model.SelectedSession.Course.Code · @Model.SelectedSession.Topic</h2>
+            <p>@Model.EnrolledStudents.Count confirmed student(s) are eligible to be recorded.</p>
+        </div>
+        <span class="status-pill status-info">Student-ID validation enabled</span>
+    </section>
+
+    <section class="card-surface">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Attendance capture</p>
+                <h2>Record or correct attendance</h2>
+            </div>
+        </div>
+        <form method="post" asp-page-handler="Record" class="coordinator-form">
+            <input asp-for="SessionId" type="hidden" />
+            <div>
+                <label asp-for="StudentNumber">Student ID</label>
+                <input asp-for="StudentNumber" class="form-control" placeholder="Enter student number" />
+            </div>
+            <div>
+                <label asp-for="AttendanceStatus">Status</label>
+                <select asp-for="AttendanceStatus" class="form-select">
+                    <option value="Present">Present</option>
+                    <option value="Late">Late</option>
+                    <option value="Absent">Absent</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" type="submit">Save attendance record</button>
+        </form>
+    </section>
+
+    <section class="card-surface registration-summary">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Confirmed class roster</p>
+                <h2>Attendance status</h2>
+            </div>
+        </div>
+        @if (Model.EnrolledStudents.Count == 0)
+        {
+            <p class="muted-copy">No confirmed registrations are currently linked to this course.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Student</th>
+                            <th>Recorded status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var student in Model.EnrolledStudents)
+                        {
+                            var record = Model.GetRecordFor(student.Id);
+                            <tr>
+                                <td><strong>@student.StudentNumber</strong></td>
+                                <td>@student.FullName</td>
+                                <td>
+                                    @if (record is null)
+                                    {
+                                        <span class="status-pill status-muted">Not recorded</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill @(record.IsAttending ? "status-success" : "status-danger")">@record.Status</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}

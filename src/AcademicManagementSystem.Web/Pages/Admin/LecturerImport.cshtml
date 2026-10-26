@@ -1,0 +1,92 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Admin.LecturerImportModel
+@{
+    ViewData["Title"] = "Import lecturers";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Administrator workspace</p>
+        <h1>Import lecturers from CSV</h1>
+        <p>Upload staff records and their available teaching days.</p>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="/Admin/Academic">Back to academic setup</a>
+</section>
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">CSV format</p>
+            <h2>Use these headings exactly</h2>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>StaffNumber</th>
+                    <th>FullName</th>
+                    <th>Specialisation</th>
+                    <th>AvailableDays</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>L001</td>
+                    <td>Mr A. P. Mulenga</td>
+                    <td>Software Engineering</td>
+                    <td>Monday|Wednesday|Friday</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card-surface registration-summary">
+    <form method="post" enctype="multipart/form-data" class="stack-form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div>
+            <label asp-for="CsvFile" class="form-label">CSV file</label>
+            <input asp-for="CsvFile" class="form-control" accept=".csv,text/csv" />
+        </div>
+
+        <button class="btn btn-primary" type="submit">Import lecturers</button>
+    </form>
+</section>
+
+@if (Model.ImportResults.Count > 0)
+{
+    <section class="card-surface registration-summary">
+        <h2>@Model.SuccessfulImports imported · @Model.FailedImports failed</h2>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Line</th>
+                        <th>Staff number</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var result in Model.ImportResults)
+                    {
+                        <tr>
+                            <td>@result.LineNumber</td>
+                            <td>@result.StaffNumber</td>
+                            <td>@(result.Success ? "Imported" : "Failed")</td>
+                            <td>@result.Message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

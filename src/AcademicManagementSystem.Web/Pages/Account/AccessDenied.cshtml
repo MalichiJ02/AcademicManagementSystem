@@ -1,0 +1,14 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Access denied";
+}
+
+<section class="auth-shell">
+    <article class="auth-card text-center">
+        <p class="section-kicker">Access control</p>
+        <h1>Access denied</h1>
+        <p class="muted-copy">Your account does not have permission to open this area.</p>
+        <a class="btn btn-primary" asp-page="/Index">Go to your dashboard</a>
+    </article>
+</section>

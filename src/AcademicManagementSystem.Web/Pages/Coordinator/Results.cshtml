@@ -1,0 +1,102 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Coordinator.ResultsModel
+@{
+    ViewData["Title"] = "Results publication";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Coordinator workspace</p>
+        <h1>Results entry and publication</h1>
+        <p>Enter results only for confirmed registrations. Publication updates pass/fail records used by carry-course and progression checks.</p>
+    </div>
+    <span class="status-pill status-info">@Model.Settings.AcademicYear · @Model.Settings.Semester</span>
+</section>
+
+<section class="card-surface form-card">
+    <p class="section-kicker">Enter or correct a result</p>
+    <h2>Unpublished result entry</h2>
+    <form method="post" asp-page-handler="Record" class="form-grid">
+        <div asp-validation-summary="ModelOnly" class="text-danger form-grid-full"></div>
+        <div>
+            <label asp-for="NewResult.StudentId" class="form-label">Student</label>
+            <select asp-for="NewResult.StudentId" class="form-select">
+                <option value="0">Choose student</option>
+                @foreach (var student in Model.Students)
+                {
+                    <option value="@student.Id">@student.StudentNumber · @student.FullName</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="NewResult.CourseId" class="form-label">Course</label>
+            <select asp-for="NewResult.CourseId" class="form-select">
+                <option value="0">Choose confirmed course</option>
+                @foreach (var course in Model.Courses)
+                {
+                    <option value="@course.Id">@course.Code · @course.Title</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="NewResult.Mark" class="form-label">Mark (%)</label>
+            <input asp-for="NewResult.Mark" class="form-control" type="number" min="0" max="100" step="0.1" />
+        </div>
+        <div class="form-grid-full"><button class="btn btn-primary" type="submit">Save unpublished result</button></div>
+    </form>
+</section>
+
+<section class="card-surface">
+    <div class="card-heading">
+        <div><p class="section-kicker">Pending publication</p><h2>@Model.PendingGroups.Count student batch(es)</h2></div>
+    </div>
+    @if (Model.PendingGroups.Count == 0)
+    {
+        <p class="muted-copy">No unpublished result batches exist.</p>
+    }
+    else
+    {
+        @foreach (var group in Model.PendingGroups)
+        {
+            <article class="result-batch">
+                <div>
+                    <strong>@group.StudentNumber · @group.StudentName</strong>
+                    <span>@string.Join(", ", group.Results.Select(result => $"{result.CourseCode}: {result.Mark:N1}% ({result.Grade})"))</span>
+                </div>
+                <form method="post" asp-page-handler="Publish">
+                    <input type="hidden" name="studentId" value="@group.StudentId" />
+                    <button class="btn btn-primary" type="submit">Publish batch</button>
+                </form>
+            </article>
+        }
+    }
+</section>
+
+<section class="card-surface">
+    <p class="section-kicker">Published this period</p>
+    <h2>@Model.PublishedResults.Count result(s)</h2>
+    @if (Model.PublishedResults.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>Student</th><th>Course</th><th>Mark</th><th>Grade</th><th>Published</th></tr></thead>
+                <tbody>
+                    @foreach (var result in Model.PublishedResults)
+                    {
+                        <tr>
+                            <td>@result.Student.StudentNumber · @result.Student.FullName</td>
+                            <td>@result.CourseCode</td>
+                            <td>@result.Mark.ToString("N1")%</td>
+                            <td>@result.Grade</td>
+                            <td>@result.PublishedAt?.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,135 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Admin.StudentImportModel
+@{
+    ViewData["Title"] = "Import Students";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Administrator workspace</p>
+        <h1>Import students from CSV</h1>
+        <p>
+            Upload many student records at once. Each successful row creates a student profile
+            and a Student-ID login account.
+        </p>
+    </div>
+
+    <a class="btn btn-outline-primary" asp-page="/Admin/Index">
+        Back to administrator workspace
+    </a>
+</section>
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Step 1</p>
+            <h2>Prepare your CSV file</h2>
+        </div>
+    </div>
+
+    <p class="muted-copy">
+        Use these column headings exactly. Programme code and study mode must already exist
+        in the system.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>StudentId</th>
+                    <th>FirstName</th>
+                    <th>LastName</th>
+                    <th>Email</th>
+                    <th>ProgrammeCode</th>
+                    <th>StudyMode</th>
+                    <th>YearOfStudy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2023123456</td>
+                    <td>John</td>
+                    <td>Banda</td>
+                    <td>john.banda@example.com</td>
+                    <td>CS</td>
+                    <td>Full-time</td>
+                    <td>3</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="muted-copy mb-0">
+        Students sign in with their Student ID. The temporary password will be shown once after import.
+    </p>
+</section>
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Step 2</p>
+            <h2>Upload and import</h2>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="stack-form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div>
+            <label asp-for="CsvFile" class="form-label">CSV file</label>
+            <input asp-for="CsvFile" class="form-control" accept=".csv,text/csv" />
+            <span asp-validation-for="CsvFile" class="text-danger"></span>
+        </div>
+
+        <button class="btn btn-primary" type="submit">
+            Import students
+        </button>
+    </form>
+</section>
+
+@if (Model.ImportResults.Count > 0)
+{
+    <section class="card-surface registration-summary">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Import results</p>
+                <h2>@Model.SuccessfulImports imported · @Model.FailedImports failed</h2>
+            </div>
+        </div>
+
+        <p class="alert alert-warning">
+            Copy the temporary passwords now and give them to the correct students securely.
+            They are shown only for this import result.
+        </p>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Line</th>
+                        <th>Student ID</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                        <th>Temporary password</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var result in Model.ImportResults)
+                    {
+                        <tr class="@(result.Success ? "table-success" : "table-danger")">
+                            <td>@result.LineNumber</td>
+                            <td>@result.StudentNumber</td>
+                            <td>@(result.Success ? "Imported" : "Failed")</td>
+                            <td>@result.Message</td>
+                            <td>@(result.TemporaryPassword ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

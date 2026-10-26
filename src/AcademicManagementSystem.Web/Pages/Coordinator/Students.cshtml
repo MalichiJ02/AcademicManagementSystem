@@ -1,0 +1,108 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Coordinator.StudentsModel
+@{
+    ViewData["Title"] = "Student oversight";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Coordinator workspace</p>
+        <h1>Student oversight and exceptions</h1>
+        <p>Review the academic and financial position of each student before applying an exception decision.</p>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="/Coordinator/Index">Back to coordinator workspace</a>
+</section>
+
+@if (TempData["Success"] is string successMessage)
+{
+    <div class="alert alert-success" role="alert">@successMessage</div>
+}
+@if (TempData["Error"] is string errorMessage)
+{
+    <div class="alert alert-danger" role="alert">@errorMessage</div>
+}
+
+<section class="card-surface decision-card">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Coordinator exception action</p>
+            <h2>Apply an academic eligibility decision</h2>
+        </div>
+        <span class="status-pill status-info">Coordinator exception workflow</span>
+    </div>
+    <p class="muted-copy">
+        Use this only when a coordinator needs to apply or remove an academic eligibility exception.
+    </p>
+    <form method="post" asp-page-handler="UpdateEligibility" class="coordinator-form">
+        <div>
+            <label asp-for="StudentId">Student</label>
+            <select asp-for="StudentId" class="form-select">
+                @foreach (var student in Model.StudentOptions)
+                {
+                    <option value="@student.Id">@student.StudentNumber — @student.FullName</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="EligibilityDecision">Decision</label>
+            <select asp-for="EligibilityDecision" class="form-select">
+                <option value="Eligible">Mark academically eligible</option>
+                <option value="Hold">Apply academic hold</option>
+            </select>
+        </div>
+        <div class="form-span-two">
+            <label asp-for="Reason">Reason when applying a hold</label>
+            <input asp-for="Reason" class="form-control" placeholder="For example: prerequisite review is outstanding" />
+        </div>
+        <button class="btn btn-primary" type="submit">Save eligibility decision</button>
+    </form>
+</section>
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Student record overview</p>
+            <h2>Current student records</h2>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Payment</th>
+                    <th>Eligibility</th>
+                    <th>Registered courses</th>
+                    <th>Risk</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var student in Model.Students)
+                {
+                    <tr>
+                        <td>
+                            <strong>@student.StudentName</strong><br />
+                            <span class="muted-copy">@student.StudentNumber · @student.Programme</span>
+                        </td>
+                        <td>@(student.PaymentPercentage is null ? "No invoice" : $"{student.PaymentPercentage:N0}%")</td>
+                        <td>
+                            <span class="status-pill @(student.IsAcademicallyEligible ? "status-success" : "status-danger")">
+                                @(student.IsAcademicallyEligible ? "Eligible" : "Academic hold")
+                            </span>
+                            @if (!student.IsAcademicallyEligible && !string.IsNullOrWhiteSpace(student.AcademicHoldReason))
+                            {
+                                <small class="table-note">@student.AcademicHoldReason</small>
+                            }
+                        </td>
+                        <td>@student.RegistrationCount</td>
+                        <td>
+                            <span class="status-pill @(student.RiskLevel == "High" ? "status-danger" : student.RiskLevel == "Moderate" ? "status-warning" : "status-success")">
+                                @student.RiskLevel
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

@@ -1,0 +1,64 @@
+@page
+@model AcademicManagementSystem.Web.Pages.StudentPortal.ResultsModel
+@{
+    ViewData["Title"] = "My results";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Student portal</p>
+        <h1>Published results</h1>
+        <p>Each published result period becomes visible after its corresponding invoice reaches @Model.Settings.ResultsPaymentPercentage.ToString("N0")% payment.</p>
+    </div>
+</section>
+
+@if (Model.ResultPeriods.Count == 0)
+{
+    <section class="card-surface empty-state">
+        <h2>No published results yet</h2>
+        <p>Your results will appear here when a coordinator publishes them for an academic period.</p>
+    </section>
+}
+else
+{
+    @foreach (var period in Model.ResultPeriods)
+    {
+        <section class="card-surface result-period">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">@period.AcademicYear · @period.Semester</p>
+                    <h2>Result batch</h2>
+                </div>
+                <span class="status-pill @(period.Access.Allowed ? "status-success" : "status-muted")">@(period.Access.Allowed ? "Available" : "Financially locked")</span>
+            </div>
+            @if (!period.Access.Allowed)
+            {
+                <ul class="reason-list">
+                    @foreach (var reason in period.Access.Reasons)
+                    {
+                        <li>@reason</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead><tr><th>Course</th><th>Mark</th><th>Grade</th><th>Published</th></tr></thead>
+                        <tbody>
+                            @foreach (var result in period.Results)
+                            {
+                                <tr>
+                                    <td><strong>@result.CourseCode</strong><br /><span class="muted-copy">@result.Course?.Title</span></td>
+                                    <td>@result.Mark.ToString("N1")%</td>
+                                    <td>@result.Grade</td>
+                                    <td>@result.PublishedAt?.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+}

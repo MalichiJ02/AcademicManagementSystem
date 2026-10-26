@@ -1,0 +1,51 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+}
+
+<section class="auth-shell">
+    <article class="auth-card">
+        <p class="section-kicker">Secure access</p>
+        <h1>Sign in</h1>
+        <p class="muted-copy">
+            Students use their Student ID. Administrators and Coordinators use their email address.
+        </p>
+
+        <form method="post" class="stack-form">
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div>
+                <label asp-for="Input.LoginIdentifier" class="form-label">
+                    Student ID or email address
+                </label>
+                <input asp-for="Input.LoginIdentifier"
+                       class="form-control"
+                       autocomplete="username"
+                       placeholder="e.g. 2023123456 or staff@example.com" />
+                <span asp-validation-for="Input.LoginIdentifier" class="text-danger"></span>
+            </div>
+
+            <div>
+                <label asp-for="Input.Password" class="form-label"></label>
+                <input asp-for="Input.Password"
+                       class="form-control"
+                       autocomplete="current-password" />
+                <span asp-validation-for="Input.Password" class="text-danger"></span>
+            </div>
+
+            <div class="form-check">
+                <input asp-for="Input.RememberMe" class="form-check-input" />
+                <label asp-for="Input.RememberMe" class="form-check-label"></label>
+            </div>
+
+            <button class="btn btn-primary w-100" type="submit">Sign in</button>
+        </form>
+    </article>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

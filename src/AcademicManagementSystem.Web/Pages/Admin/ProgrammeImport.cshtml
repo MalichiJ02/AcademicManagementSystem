@@ -1,0 +1,111 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Admin.ProgrammeImportModel
+@{
+    ViewData["Title"] = "Import programmes";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Administrator workspace</p>
+        <h1>Import programmes from CSV</h1>
+        <p>Upload programme records instead of entering each programme manually.</p>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="/Admin/Academic">Back to academic setup</a>
+</section>
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Step 1</p>
+            <h2>Prepare your CSV file</h2>
+        </div>
+    </div>
+
+    <p class="muted-copy">
+        Use these headings exactly. The importer accepts comma-separated or
+        semicolon-separated CSV files.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ProgrammeCode</th>
+                    <th>ProgrammeName</th>
+                    <th>BaseTuition</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CS</td>
+                    <td>Bachelor of Science in Computer Science</td>
+                    <td>15000</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card-surface registration-summary">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Step 2</p>
+            <h2>Upload and import</h2>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="stack-form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div>
+            <label asp-for="CsvFile" class="form-label">CSV file</label>
+            <input asp-for="CsvFile" class="form-control" accept=".csv,text/csv" />
+        </div>
+
+        <button class="btn btn-primary" type="submit">Import programmes</button>
+    </form>
+</section>
+
+@if (Model.ImportResults.Count > 0)
+{
+    <section class="card-surface registration-summary">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Import results</p>
+                <h2>@Model.SuccessfulImports imported · @Model.FailedImports failed</h2>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Line</th>
+                        <th>Programme code</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var result in Model.ImportResults)
+                    {
+                        <tr>
+                            <td>@result.LineNumber</td>
+                            <td>@result.ProgrammeCode</td>
+                            <td>
+                                <span class="status-pill @(result.Success ? "status-success" : "status-danger")">
+                                    @(result.Success ? "Imported" : "Failed")
+                                </span>
+                            </td>
+                            <td>@result.Message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,124 @@
+@page
+@model AcademicManagementSystem.Web.Pages.StudentPortal.IndexModel
+@{
+    ViewData["Title"] = "My dashboard";
+}
+
+@if (Model.Student is null)
+{
+    <section class="card-surface empty-state">
+        <h1>Student account is not linked</h1>
+        <p>Your login is not linked to an active student record. Please contact the administrator.</p>
+    </section>
+}
+else
+{
+    <section class="page-heading">
+        <div>
+            <p class="section-kicker">Student portal</p>
+            <h1>Welcome, @Model.Student.FirstName</h1>
+            <p>@Model.Student.StudentNumber · @Model.Student.Programme · @Model.Student.StudyMode · Year @Model.Student.YearOfStudy</p>
+        </div>
+        <span class="status-pill @(Model.Student.IsAcademicallyEligible ? "status-success" : "status-danger")">
+            @(Model.Student.IsAcademicallyEligible ? "Academically eligible" : "Academic hold")
+        </span>
+    </section>
+
+    @if (Model.Progression is { IsRestricted: true })
+    {
+        <div class="alert alert-warning">
+            <strong>Restricted progression:</strong> @Model.Progression.Reason
+        </div>
+    }
+
+    <section class="dashboard-grid">
+        <article class="card-surface finance-card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Current invoice</p>
+                    <h2>
+                        @(Model.CurrentInvoice is null
+                            ? "Not generated"
+                            : $"{Model.CurrentInvoice.PaymentPercentage:N0}% paid")
+                    </h2>
+                </div>
+                <a class="btn btn-outline-primary" asp-page="/Student/Invoices">View invoices</a>
+            </div>
+            @if (Model.CurrentInvoice is null)
+            {
+                <p class="muted-copy">Generate your invoice for @Model.Settings.AcademicYear · @Model.Settings.Semester using your programme and study mode.</p>
+            }
+            else
+            {
+                <div class="payment-progress"><span style="width: @Model.CurrentInvoice.PaymentPercentage%;"></span></div>
+                <dl class="financial-details">
+                    <div><dt>Total</dt><dd>ZMW @Model.CurrentInvoice.TotalAmount.ToString("N2")</dd></div>
+                    <div><dt>Paid</dt><dd>ZMW @Model.CurrentInvoice.AmountPaid.ToString("N2")</dd></div>
+                    <div><dt>Balance</dt><dd>ZMW @Model.CurrentInvoice.Balance.ToString("N2")</dd></div>
+                    <div><dt>Payment account</dt><dd>@Model.CurrentInvoice.PaymentAccount</dd></div>
+                </dl>
+            }
+        </article>
+        <article class="card-surface action-card">
+            <p class="section-kicker">Registration</p>
+            <h2>@(Model.RegistrationAccess?.Allowed == true ? "Course selection is available" : "Check your requirements")</h2>
+            @if (Model.RegistrationAccess?.Allowed == true)
+            {
+                <p>You meet the current payment and academic requirements for self-registration.</p>
+            }
+            else if (Model.RegistrationAccess is not null)
+            {
+                <ul class="reason-list">
+                    @foreach (var reason in Model.RegistrationAccess.Reasons)
+                    {
+                        <li>@reason</li>
+                    }
+                </ul>
+            }
+            <a class="btn btn-primary" asp-page="/Student/Registration">Manage my registration</a>
+        </article>
+    </section>
+
+    <section class="milestone-grid">
+        <article class="milestone-card">
+            <span class="milestone-number">@Model.Settings.RegistrationPaymentPercentage.ToString("N0")%</span>
+            <h3>Course registration</h3>
+            <p>Requires current invoice payment and academic eligibility.</p>
+            <span class="status-pill @(Model.RegistrationAccess?.Allowed == true ? "status-success" : "status-muted")">@(Model.RegistrationAccess?.Allowed == true ? "Available" : "Locked")</span>
+        </article>
+        <article class="milestone-card">
+            <span class="milestone-number">@Model.Settings.ExamSlipPaymentPercentage.ToString("N0")%</span>
+            <h3>Exam slip</h3>
+            <p>Requires financial clearance and confirmed registration.</p>
+            <span class="status-pill @(Model.ExamSlipAccess?.Allowed == true ? "status-success" : "status-muted")">@(Model.ExamSlipAccess?.Allowed == true ? "Available" : "Locked")</span>
+            <a asp-page="/Student/ExamSlip">Check exam slip</a>
+        </article>
+        <article class="milestone-card">
+            <span class="milestone-number">@Model.Settings.ResultsPaymentPercentage.ToString("N0")%</span>
+            <h3>Published results</h3>
+            <p>Requires full financial clearance and publication.</p>
+            <span class="status-pill @(Model.ResultsAccess?.Allowed == true ? "status-success" : "status-muted")">@(Model.ResultsAccess?.Allowed == true ? "Available" : "Locked")</span>
+            <a asp-page="/Student/Results">View results</a>
+        </article>
+    </section>
+
+    <section class="insight-grid">
+        <article class="card-surface insight-card">
+            <p class="section-kicker">My timetable</p>
+            <h2>@Model.Registrations.Count confirmed course(s)</h2>
+            <p>View the personal timetable created from your confirmed registration.</p>
+            <a class="text-link" asp-page="/Student/Timetable">Open timetable</a>
+        </article>
+        <article class="card-surface insight-card">
+            <p class="section-kicker">Attendance</p>
+            <h2>@(Model.Attendance?.AttendancePercentage is null ? "No sessions yet" : $"{Model.Attendance.AttendancePercentage:N0}% attendance")</h2>
+            <p>Attendance information is visible only for your own account.</p>
+            <a class="text-link" asp-page="/Student/Attendance">View attendance</a>
+        </article>
+        <article class="card-surface insight-card">
+            <p class="section-kicker">Academic support</p>
+            <h2>@(Model.RiskAssessment?.Level ?? "No") risk indicator</h2>
+            <p>@(Model.RiskAssessment?.Reasons.FirstOrDefault() ?? "No academic monitoring data is available yet.")</p>
+        </article>
+    </section>
+}

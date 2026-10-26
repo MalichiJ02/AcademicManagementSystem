@@ -1,0 +1,54 @@
+@page
+@model AcademicManagementSystem.Web.Pages.StudentPortal.ExamSlipModel
+@{
+    ViewData["Title"] = "Exam slip";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Student portal</p>
+        <h1>Examination eligibility</h1>
+        <p>An exam slip requires @Model.Settings.ExamSlipPaymentPercentage.ToString("N0")% payment and at least one confirmed registration.</p>
+    </div>
+</section>
+
+@if (Model.Access.Allowed && Model.Student is not null && Model.CurrentInvoice is not null)
+{
+    <section class="card-surface exam-slip">
+        <div class="slip-header">
+            <div>
+                <p class="section-kicker">Eligibility confirmed</p>
+                <h2>Exam-slip preview</h2>
+            </div>
+            <span class="status-pill status-success">Eligible</span>
+        </div>
+        <dl class="slip-details">
+            <div><dt>Student</dt><dd>@Model.Student.FullName</dd></div>
+            <div><dt>Student number</dt><dd>@Model.Student.StudentNumber</dd></div>
+            <div><dt>Period</dt><dd>@Model.Settings.AcademicYear · @Model.Settings.Semester</dd></div>
+            <div><dt>Financial status</dt><dd>@Model.CurrentInvoice.PaymentPercentage.ToString("N0")% paid</dd></div>
+        </dl>
+        <h3>Confirmed courses</h3>
+        <ul class="plain-list">
+            @foreach (var registration in Model.Registrations)
+            {
+                <li><strong>@registration.Course.Code</strong> · @registration.Course.Title</li>
+            }
+        </ul>
+        <p class="muted-copy">This is a prototype eligibility preview, not an official institutional exam slip.</p>
+    </section>
+}
+else
+{
+    <section class="card-surface empty-state">
+        <p class="section-kicker">Not yet eligible</p>
+        <h2>Exam slip is locked</h2>
+        <ul class="reason-list">
+            @foreach (var reason in Model.Access.Reasons)
+            {
+                <li>@reason</li>
+            }
+        </ul>
+        <a class="btn btn-primary" asp-page="/Student/Invoices">Review invoice</a>
+    </section>
+}

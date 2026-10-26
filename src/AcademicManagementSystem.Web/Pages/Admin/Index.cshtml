@@ -1,0 +1,97 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Administration";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Administrator workspace</p>
+        <h1>Set up the academic system</h1>
+        <p>Manage the data and rules that enable secure student self-service.</p>
+    </div>
+    <span class="status-pill status-info">@Model.Settings.AcademicYear · @Model.Settings.Semester</span>
+</section>
+
+<section class="metric-grid">
+    <article class="metric-card"><span>Programmes</span><strong>@Model.ProgrammeCount</strong></article>
+    <article class="metric-card"><span>Study modes</span><strong>@Model.StudyModeCount</strong></article>
+    <article class="metric-card"><span>Courses</span><strong>@Model.CourseCount</strong></article>
+    <article class="metric-card"><span>Students</span><strong>@Model.StudentCount</strong></article>
+</section>
+
+<section class="dashboard-grid">
+    <article class="card-surface">
+        <p class="section-kicker">Recommended setup order</p>
+        <h2>Build the data once, then students work for themselves</h2>
+        <ol class="setup-list">
+            <li>
+                <a asp-page="/Admin/Academic">
+                    Set the academic year, financial thresholds, programmes, study modes, and courses.
+                </a>
+            </li>
+            <li>
+                <a asp-page="/Admin/StudentImport">
+                    Import many student records and Student-ID accounts from a CSV file.
+                </a>
+            </li>
+            <li>
+                <a asp-page="/Admin/Students">
+                    Review, update, or create an individual student account.
+                </a>
+            </li>
+            <li>Ask each student to sign in using their Student ID and generate their own invoice.</li>
+            <li>
+                <a asp-page="/Admin/Finance">
+                    Record prototype payment information when a payment is confirmed.
+                </a>
+            </li>
+            <li>
+                <a asp-page="/Coordinator/Timetable">
+                    Review the generated timetable before registration begins.
+                </a>
+            </li>
+        </ol>
+    </article>
+
+    <article class="card-surface action-card">
+        <p class="section-kicker">Current rules</p>
+        <h2>@Model.Settings.RegistrationPaymentPercentage:N0% registration threshold</h2>
+        <p>
+            Exam slips require @Model.Settings.ExamSlipPaymentPercentage:N0%;
+            results require @Model.Settings.ResultsPaymentPercentage:N0%.
+            The normal registration limit is @Model.Settings.MaximumTotalCourses courses,
+            including at most @Model.Settings.MaximumCarryCourses carries.
+        </p>
+        <a class="btn btn-primary" asp-page="/Admin/Academic">Review settings</a>
+    </article>
+
+    <article class="card-surface action-card">
+        <p class="section-kicker">Student administration</p>
+        <h2>Import students from CSV</h2>
+        <p>
+            Add many students at once and create their Student-ID login accounts securely.
+            The system checks duplicate Student IDs, emails, programmes, and study modes.
+        </p>
+        <a class="btn btn-primary" asp-page="/Admin/StudentImport">
+            Open student import
+        </a>
+    </article>
+</section>
+
+<section class="card-surface">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">System status</p>
+            <h2>Empty-data start is active</h2>
+        </div>
+        <span class="status-pill @(Model.StudentCount == 0 ? "status-warning" : "status-success")">
+            @(Model.StudentCount == 0 ? "Setup required" : "Data entered")
+        </span>
+    </div>
+
+    <p class="muted-copy">
+        There are @Model.StudentCount student record(s), @Model.InvoiceCount invoice(s), and
+        @Model.TimetableEntryCount timetable entry/entries. No fictional records are generated automatically.
+    </p>
+</section>

@@ -1,0 +1,18 @@
+# Build output
+**/bin/
+**/obj/
+
+# Local Visual Studio and Rider settings
+.vs/
+.idea/
+*.user
+*.suo
+
+# Local prototype databases are created on first run and must not be committed.
+**/App_Data/*.db
+**/App_Data/*.db-shm
+**/App_Data/*.db-wal
+
+# Local operating-system files
+.DS_Store
+Thumbs.db

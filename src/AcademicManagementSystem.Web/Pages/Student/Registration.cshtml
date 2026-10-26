@@ -1,0 +1,111 @@
+@page
+@model AcademicManagementSystem.Web.Pages.StudentPortal.RegistrationModel
+@{
+    ViewData["Title"] = "Course registration";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Student portal</p>
+        <h1>Self-registration</h1>
+        <p>Select eligible courses for @Model.Settings.AcademicYear · @Model.Settings.Semester. The system checks your payment, progression, prerequisites, course limits, and timetable.</p>
+    </div>
+</section>
+
+@if (Model.Student is null)
+{
+    <section class="card-surface empty-state"><p>Student record unavailable.</p></section>
+}
+else if (Model.CurrentInvoice is null)
+{
+    <section class="card-surface empty-state">
+        <h2>Generate your invoice first</h2>
+        <p>Your current financial clearance cannot be checked until your invoice exists.</p>
+        <a class="btn btn-primary" asp-page="/Student/Invoices">Generate invoice</a>
+    </section>
+}
+else
+{
+    <section class="dashboard-grid">
+        <article class="card-surface">
+            <p class="section-kicker">Registration clearance</p>
+            <h2>@Model.CurrentInvoice.PaymentPercentage.ToString("N0")% paid</h2>
+            <p>
+                Minimum required: @Model.Settings.RegistrationPaymentPercentage.ToString("N0")%.
+                Current balance: ZMW @Model.CurrentInvoice.Balance.ToString("N2").
+            </p>
+            <span class="status-pill @(Model.RegistrationAccess?.Allowed == true ? "status-success" : "status-danger")">
+                @(Model.RegistrationAccess?.Allowed == true ? "Registration available" : "Registration locked")
+            </span>
+        </article>
+        <article class="card-surface">
+            <p class="section-kicker">Academic progression</p>
+            <h2>@(Model.Progression?.IsRestricted == true ? "Restricted to failed courses" : "Normal progression")</h2>
+            <p>@(Model.Progression?.Reason ?? $"Up to {Model.Settings.MaximumTotalCourses} total courses and {Model.Settings.MaximumCarryCourses} carry courses are allowed for normal processing.")</p>
+            @if (Model.Progression?.OutstandingCarryCourseCodes.Count > 0)
+            {
+                <p class="muted-copy">Outstanding carries: @string.Join(", ", Model.Progression.OutstandingCarryCourseCodes)</p>
+            }
+        </article>
+    </section>
+
+    @if (Model.RegistrationAccess?.Allowed != true)
+    {
+        <section class="card-surface">
+            <h2>Registration cannot be submitted yet</h2>
+            <ul class="reason-list">
+                @foreach (var reason in Model.RegistrationAccess?.Reasons ?? [])
+                {
+                    <li>@reason</li>
+                }
+            </ul>
+        </section>
+    }
+    else
+    {
+        <form method="post">
+            <section class="card-surface">
+                <div class="card-heading">
+                    <div>
+                        <p class="section-kicker">Choose courses</p>
+                        <h2>Eligible course catalogue</h2>
+                    </div>
+                    <span class="status-pill status-info">Maximum @Math.Min(Model.Settings.MaximumTotalCourses, Model.Student.StudyModeRecord?.MaximumCourses ?? Model.Settings.MaximumTotalCourses) total course(s)</span>
+                </div>
+
+                @if (Model.AvailableCourses.Count == 0)
+                {
+                    <p class="muted-copy">No active courses are configured for your programme and study mode.</p>
+                }
+                else
+                {
+                    <div class="course-choice-list">
+                        @foreach (var course in Model.AvailableCourses)
+                        {
+                            var isRegistered = Model.RegisteredCourseIds.Contains(course.Id);
+                            var isCarry = Model.Student.CompletedCourses.Any(item =>
+                                item.CourseCode.Equals(course.Code, StringComparison.OrdinalIgnoreCase) && !item.IsPassed);
+                            var prerequisites = course.Prerequisites.Select(item => item.PrerequisiteCourse.Code).ToList();
+                            <label class="course-choice @(isRegistered ? "course-choice-muted" : "")">
+                                <input class="form-check-input" type="checkbox" name="SelectedCourseIds" value="@course.Id" disabled="@isRegistered" />
+                                <span>
+                                    <strong>@course.Code · @course.Title</strong>
+                                    <small>Year @course.YearLevel · @course.CreditUnits credit units · @course.SemesterOffered</small>
+                                    <small>Schedule: @Model.GetCourseSchedule(course)</small>
+                                    @if (prerequisites.Count > 0)
+                                    {
+                                        <small>Requires passed: @string.Join(", ", prerequisites)</small>
+                                    }
+                                </span>
+                                <span class="status-pill @(isRegistered ? "status-success" : isCarry ? "status-warning" : "status-info")">
+                                    @(isRegistered ? "Registered" : isCarry ? "Carry course" : "Available")
+                                </span>
+                            </label>
+                        }
+                    </div>
+                    <button class="btn btn-primary mt-3" type="submit">Submit course registration</button>
+                }
+            </section>
+        </form>
+    }
+}

@@ -1,0 +1,68 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Coordinator.MonitoringModel
+@{
+    ViewData["Title"] = "Academic monitoring";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="eyebrow">Coordinator workspace</p>
+        <h1>Academic early-warning monitor</h1>
+        <p>Risk levels combine academic holds, recorded attendance, and available result marks. They are support indicators, not final academic decisions.</p>
+    </div>
+    <a class="btn btn-outline-primary" asp-page="/Coordinator/Index">Back to coordinator workspace</a>
+</section>
+
+<section class="summary-metric-grid">
+    <article class="metric-card metric-danger">
+        <span>High risk</span>
+        <strong>@Model.HighRiskCount</strong>
+    </article>
+    <article class="metric-card metric-warning">
+        <span>Moderate risk</span>
+        <strong>@Model.ModerateRiskCount</strong>
+    </article>
+    <article class="metric-card">
+        <span>Low risk</span>
+        <strong>@Model.LowRiskCount</strong>
+    </article>
+</section>
+
+<section class="card-surface">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Student indicator list</p>
+            <h2>Current academic analysis</h2>
+        </div>
+        <a class="text-link" asp-page="/Coordinator/Students">Review eligibility decisions</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Attendance</th>
+                    <th>Average mark</th>
+                    <th>Indicator</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var assessment in Model.Assessments)
+                {
+                    <tr>
+                        <td><strong>@assessment.StudentName</strong><br /><span class="muted-copy">@assessment.StudentNumber</span></td>
+                        <td>@(assessment.AttendancePercentage is null ? "No data" : $"{assessment.AttendancePercentage:N1}%")</td>
+                        <td>@(assessment.AverageMark is null ? "No data" : $"{assessment.AverageMark:N1}%")</td>
+                        <td>
+                            <span class="status-pill @(assessment.Level == "High" ? "status-danger" : assessment.Level == "Moderate" ? "status-warning" : "status-success")">
+                                @assessment.Level
+                            </span>
+                        </td>
+                        <td class="reason-cell">@string.Join(" ", assessment.Reasons)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

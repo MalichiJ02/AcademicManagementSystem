@@ -1,0 +1,58 @@
+@page
+@model AcademicManagementSystem.Web.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "Staff accounts";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Administrator workspace</p>
+        <h1>Coordinator and administrator accounts</h1>
+        <p>Student accounts are created from the Students page. Use this page for the staff roles.</p>
+    </div>
+</section>
+
+<section class="card-surface form-card">
+    <p class="section-kicker">New staff account</p>
+    <h2>Create a secure role-based account</h2>
+    <form method="post" asp-page-handler="Create" class="form-grid">
+        <div asp-validation-summary="ModelOnly" class="text-danger form-grid-full"></div>
+        <div><label asp-for="NewAccount.FullName" class="form-label">Full name</label><input asp-for="NewAccount.FullName" class="form-control" /></div>
+        <div><label asp-for="NewAccount.Email" class="form-label">Email / username</label><input asp-for="NewAccount.Email" class="form-control" type="email" /></div>
+        <div><label asp-for="NewAccount.Password" class="form-label">Initial password</label><input asp-for="NewAccount.Password" class="form-control" type="password" autocomplete="new-password" /></div>
+        <div>
+            <label asp-for="NewAccount.Role" class="form-label">Role</label>
+            <select asp-for="NewAccount.Role" class="form-select"><option>Coordinator</option><option>Administrator</option></select>
+        </div>
+        <div class="form-grid-full"><button class="btn btn-primary" type="submit">Create staff account</button></div>
+    </form>
+</section>
+
+<section class="card-surface">
+    <p class="section-kicker">Accounts</p>
+    <h2>@Model.Users.Count account(s)</h2>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Linked student</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var account in Model.Users)
+                {
+                    <tr>
+                        <td>@account.FullName</td>
+                        <td>@account.Email</td>
+                        <td>@account.Roles</td>
+                        <td>@(account.StudentId?.ToString() ?? "—")</td>
+                        <td><span class="status-pill @(account.IsActive ? "status-success" : "status-muted")">@(account.IsActive ? "Active" : "Disabled")</span></td>
+                        <td>
+                            <form method="post" asp-page-handler="ToggleActive">
+                                <input type="hidden" name="userId" value="@account.Id" />
+                                <input type="hidden" name="isActive" value="@(!account.IsActive)" />
+                                <button class="btn btn-sm btn-outline-primary" type="submit">@(account.IsActive ? "Disable" : "Enable")</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

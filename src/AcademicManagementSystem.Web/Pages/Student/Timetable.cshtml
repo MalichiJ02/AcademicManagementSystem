@@ -1,0 +1,56 @@
+@page
+@model AcademicManagementSystem.Web.Pages.StudentPortal.TimetableModel
+@{
+    ViewData["Title"] = "My timetable";
+}
+
+<section class="page-heading">
+    <div>
+        <p class="section-kicker">Student portal</p>
+        <h1>My timetable</h1>
+        <p>Personal view for your confirmed @Model.Settings.AcademicYear · @Model.Settings.Semester registration.</p>
+    </div>
+</section>
+
+@if (Model.Entries.Count == 0)
+{
+    <section class="card-surface empty-state">
+        <h2>No timetable entries yet</h2>
+        <p>There are no published timetable entries for your confirmed courses.</p>
+    </section>
+}
+else
+{
+    <section class="card-surface">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>Course</th><th>Day and time</th><th>Room</th><th>Lecturer</th></tr></thead>
+                <tbody>
+                    @foreach (var entry in Model.Entries)
+                    {
+                        <tr>
+                            <td><strong>@entry.Course.Code</strong><br /><span class="muted-copy">@entry.Course.Title</span></td>
+                            <td>@entry.ScheduleLabel</td>
+                            <td>@entry.Room.Code · @entry.Room.Name</td>
+                            <td>@entry.Lecturer.FullName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@if (Model.RegistrationsWithoutTimetable.Count > 0)
+{
+    <section class="card-surface">
+        <h2>Awaiting allocation</h2>
+        <p class="muted-copy">The coordinator has not published a timetable slot for these confirmed courses yet:</p>
+        <ul class="plain-list">
+            @foreach (var registration in Model.RegistrationsWithoutTimetable)
+            {
+                <li><strong>@registration.Course.Code</strong> · @registration.Course.Title</li>
+            }
+        </ul>
+    </section>
+}
