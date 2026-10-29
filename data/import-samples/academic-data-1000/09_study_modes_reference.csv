@@ -1,0 +1,4 @@
+﻿"StudyMode","Description","MaximumCoursesPerSemester","AdditionalFee"
+"Full-time","Weekday daytime study","4","0"
+"Part-time","Reduced course load for working students","2","1000"
+"Evening","Late-afternoon and evening study","4","500"
