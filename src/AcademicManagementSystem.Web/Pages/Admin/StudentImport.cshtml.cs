@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Cryptography;
 using System.Text;
 using AcademicManagementSystem.Web.Data;
 using AcademicManagementSystem.Web.Models;
@@ -16,6 +15,8 @@ public class StudentImportModel(
     AcademicManagementDbContext database,
     UserManager<ApplicationUser> userManager) : PageModel
 {
+    private const string DefaultStudentPassword = "Test1234";
+
     private static readonly string[] RequiredColumns =
     [
         "StudentId",
@@ -59,7 +60,10 @@ public class StudentImportModel(
 
         if (CsvFile.Length > 2 * 1024 * 1024)
         {
-            ModelState.AddModelError(string.Empty, "The CSV file must be smaller than 2 MB.");
+            ModelState.AddModelError(
+                string.Empty,
+                "The CSV file must be smaller than 2 MB.");
+
             return Page();
         }
 
@@ -80,12 +84,19 @@ public class StudentImportModel(
                 .ToListAsync())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var studentIdsInFile = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var emailsInFile = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var studentIdsInFile = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase);
+
+        var emailsInFile = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase);
+
         var results = new List<CsvImportResult>();
 
         using var stream = CsvFile.OpenReadStream();
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        using var reader = new StreamReader(
+            stream,
+            Encoding.UTF8,
+            detectEncodingFromByteOrderMarks: true);
 
         var headerLine = await reader.ReadLineAsync();
 
@@ -99,14 +110,19 @@ public class StudentImportModel(
             .Select(header => header.Trim())
             .ToList();
 
-        if (headers.Distinct(StringComparer.OrdinalIgnoreCase).Count() != headers.Count)
+        if (headers.Distinct(StringComparer.OrdinalIgnoreCase).Count()
+            != headers.Count)
         {
-            ModelState.AddModelError(string.Empty, "The CSV file contains duplicate column headings.");
+            ModelState.AddModelError(
+                string.Empty,
+                "The CSV file contains duplicate column headings.");
+
             return Page();
         }
 
         var missingColumns = RequiredColumns
-            .Where(required => !headers.Contains(required, StringComparer.OrdinalIgnoreCase))
+            .Where(required =>
+                !headers.Contains(required, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
         if (missingColumns.Count > 0)
@@ -186,43 +202,50 @@ public class StudentImportModel(
 
             if (!programmes.TryGetValue(programmeCode, out var programme))
             {
-                validationErrors.Add($"Programme code '{programmeCode}' does not exist.");
+                validationErrors.Add(
+                    $"Programme code '{programmeCode}' does not exist.");
             }
 
             if (!studyModes.TryGetValue(studyModeName, out var studyMode))
             {
-                validationErrors.Add($"Study mode '{studyModeName}' does not exist.");
+                validationErrors.Add(
+                    $"Study mode '{studyModeName}' does not exist.");
             }
 
             if (!int.TryParse(row["YearOfStudy"], out var yearOfStudy) ||
                 yearOfStudy < 1 ||
                 yearOfStudy > 10)
             {
-                validationErrors.Add("Year of study must be a number from 1 to 10.");
+                validationErrors.Add(
+                    "Year of study must be a number from 1 to 10.");
             }
 
             if (existingStudentNumbers.Contains(studentNumber) ||
                 !studentIdsInFile.Add(studentNumber))
             {
-                validationErrors.Add($"Student ID '{studentNumber}' already exists.");
+                validationErrors.Add(
+                    $"Student ID '{studentNumber}' already exists.");
             }
 
             if (!string.IsNullOrWhiteSpace(email) &&
                 !emailsInFile.Add(email))
             {
-                validationErrors.Add($"Email '{email}' appears more than once in this file.");
+                validationErrors.Add(
+                    $"Email '{email}' appears more than once in this file.");
             }
 
             if (!string.IsNullOrWhiteSpace(studentNumber) &&
                 await userManager.FindByNameAsync(studentNumber) is not null)
             {
-                validationErrors.Add($"A login account already uses Student ID '{studentNumber}'.");
+                validationErrors.Add(
+                    $"A login account already uses Student ID '{studentNumber}'.");
             }
 
             if (!string.IsNullOrWhiteSpace(email) &&
                 await userManager.FindByEmailAsync(email) is not null)
             {
-                validationErrors.Add($"A login account already uses '{email}'.");
+                validationErrors.Add(
+                    $"A login account already uses '{email}'.");
             }
 
             if (validationErrors.Count > 0)
@@ -237,7 +260,7 @@ public class StudentImportModel(
                 continue;
             }
 
-            var temporaryPassword = CreateTemporaryPassword();
+            var temporaryPassword = DefaultStudentPassword;
 
             var user = new ApplicationUser
             {
@@ -247,7 +270,9 @@ public class StudentImportModel(
                 IsActive = true
             };
 
-            var createUserResult = await userManager.CreateAsync(user, temporaryPassword);
+            var createUserResult = await userManager.CreateAsync(
+                user,
+                temporaryPassword);
 
             if (!createUserResult.Succeeded)
             {
@@ -261,7 +286,9 @@ public class StudentImportModel(
                 continue;
             }
 
-            var addToRoleResult = await userManager.AddToRoleAsync(user, "Student");
+            var addToRoleResult = await userManager.AddToRoleAsync(
+                user,
+                "Student");
 
             if (!addToRoleResult.Succeeded)
             {
@@ -271,7 +298,8 @@ public class StudentImportModel(
                     lineNumber,
                     studentNumber,
                     false,
-                    $"Student role could not be assigned. {FormatIdentityErrors(addToRoleResult.Errors)}",
+                    $"Student role could not be assigned. " +
+                    FormatIdentityErrors(addToRoleResult.Errors),
                     null));
 
                 continue;
@@ -312,7 +340,8 @@ public class StudentImportModel(
                         lineNumber,
                         studentNumber,
                         false,
-                        $"Student account could not be linked. {FormatIdentityErrors(updateUserResult.Errors)}",
+                        $"Student account could not be linked. " +
+                        FormatIdentityErrors(updateUserResult.Errors),
                         null));
 
                     continue;
@@ -346,15 +375,8 @@ public class StudentImportModel(
         return Page();
     }
 
-    private static string CreateTemporaryPassword()
-    {
-        var randomPart = Convert.ToHexString(RandomNumberGenerator.GetBytes(6));
-
-        // Meets the password policy: uppercase, lowercase, digit, special character.
-        return $"Cbu!9{randomPart}";
-    }
-
-    private static string FormatIdentityErrors(IEnumerable<IdentityError> errors) =>
+    private static string FormatIdentityErrors(
+        IEnumerable<IdentityError> errors) =>
         string.Join(" ", errors.Select(error => error.Description));
 
     private static List<string> ParseCsvLine(string line)
