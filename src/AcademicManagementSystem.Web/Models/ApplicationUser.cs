@@ -5,10 +5,17 @@ namespace AcademicManagementSystem.Web.Models;
 /// <summary>
 /// Authentication account. Student academic data remains in the academic
 /// database and is connected with Student.IdentityUserId.
+///
+/// CoordinatingSchoolId is used only for Coordinator accounts. It points to a
+/// School record in the separate academic database.
 /// </summary>
 public sealed class ApplicationUser : IdentityUser
 {
     public string FullName { get; set; } = string.Empty;
+
     public int? StudentId { get; set; }
+
+    public int? CoordinatingSchoolId { get; set; }
+
     public bool IsActive { get; set; } = true;
 }

@@ -2,7 +2,6 @@ using AcademicManagementSystem.Web.Data;
 using AcademicManagementSystem.Web.Models;
 using AcademicManagementSystem.Web.Services;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,13 +12,6 @@ builder.Services.AddHttpContextAccessor();
 
 var dataDirectory = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
 Directory.CreateDirectory(dataDirectory);
-
-var dataProtectionDirectory = Path.Combine(dataDirectory, "DataProtection-Keys");
-Directory.CreateDirectory(dataProtectionDirectory);
-builder.Services
-    .AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionDirectory))
-    .SetApplicationName("AcademicManagementSystem");
 
 // Version 2 intentionally uses fresh databases. The old demonstration
 // database remains untouched so an update never silently destroys work.
@@ -103,7 +95,8 @@ using (var scope = app.Services.CreateScope())
     var academicDatabase = services.GetRequiredService<AcademicManagementDbContext>();
     var identityDatabase = services.GetRequiredService<ApplicationIdentityDbContext>();
     await DbInitializer.InitialiseAsync(academicDatabase);
-    await identityDatabase.Database.EnsureCreatedAsync();
+    await academicDatabase.Database.MigrateAsync();
+    await IdentityDbInitializer.InitialiseAsync(identityDatabase);
 
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     await IdentityInitializer.EnsureRolesAsync(roleManager);

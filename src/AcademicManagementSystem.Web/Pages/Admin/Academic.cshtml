@@ -2,741 +2,821 @@
 @model AcademicManagementSystem.Web.Pages.Admin.AcademicModel
 @{
     ViewData["Title"] = "Academic setup";
+    ViewData["AcademicSection"] = Model.Section;
 }
 
-<section class="page-heading">
-    <div>
-        <p class="section-kicker">Administrator workspace</p>
-        <h1>Academic setup and rules</h1>
-        <p>
-            Configure the information used for invoices, eligibility,
-            course selection, and timetable generation.
-        </p>
-    </div>
-</section>
+<header class="page-heading">
+    <div><h1>Academic setup</h1></div>
+</header>
 
-<section class="card-surface registration-summary">
-    <div class="card-heading">
-        <div>
-            <p class="section-kicker">Bulk import tools</p>
-            <h2>Set up system data from CSV files</h2>
-        </div>
-        <span class="status-pill status-info">Recommended for initial setup</span>
-    </div>
-
-    <p class="muted-copy">
-        Use these import tools to add many records at once. Study modes remain
-        manual because there are normally only three: Full-time, Part-time, and Evening.
-    </p>
-
-    <div class="dashboard-grid">
-        <a class="card-surface action-card" asp-page="/Admin/ProgrammeImport">
-            <p class="section-kicker">Step 1</p>
-            <h3>Import programmes</h3>
-            <p class="muted-copy">Add programme codes, names, and tuition amounts.</p>
-        </a>
-
-        <a class="card-surface action-card" asp-page="/Admin/CourseImport">
-            <p class="section-kicker">Step 2</p>
-            <h3>Import courses</h3>
-            <p class="muted-copy">Add courses after programmes and study modes exist.</p>
-        </a>
-
-        <a class="card-surface action-card" asp-page="/Admin/LecturerImport">
-            <p class="section-kicker">Step 3</p>
-            <h3>Import lecturers</h3>
-            <p class="muted-copy">
-                Add staff numbers, names, specialisations, and available days.
-            </p>
-        </a>
-
-        <a class="card-surface action-card" asp-page="/Admin/RoomImport">
-            <p class="section-kicker">Step 4</p>
-            <h3>Import rooms</h3>
-            <p class="muted-copy">
-                Add lecture theatres, classrooms, laboratories, and capacities.
-            </p>
-        </a>
-
-        <a class="card-surface action-card" asp-page="/Admin/CourseLecturerAssignments">
-            <p class="section-kicker">Step 5</p>
-            <h3>Manage lecturer assignments</h3>
-            <p class="muted-copy">
-                Add, correct, remove, or change a course’s primary lecturer manually.
-            </p>
-        </a>
-
-        <a class="card-surface action-card" asp-page="/Admin/CourseLecturerAssignmentImport">
-            <p class="section-kicker">Step 6</p>
-            <h3>Import lecturer assignments</h3>
-            <p class="muted-copy">
-                Bulk assign lecturers using course codes and lecturer staff numbers.
-            </p>
-        </a>
-
-        <a class="card-surface action-card" asp-page="/Admin/StudentImport">
-            <p class="section-kicker">Step 7</p>
-            <h3>Import students</h3>
-            <p class="muted-copy">
-                Create student records and Student-ID login accounts.
-            </p>
-        </a>
-    </div>
-</section>
-
-<section class="card-surface form-card">
-    <p class="section-kicker">1 · Academic and financial rules</p>
-    <h2>Current period and access requirements</h2>
-
-    <form method="post" asp-page-handler="SaveSettings" class="form-grid">
-        <div asp-validation-summary="ModelOnly" class="text-danger form-grid-full"></div>
-
-        <div>
-            <label asp-for="SettingsInput.AcademicYear" class="form-label">Academic year</label>
-            <input asp-for="SettingsInput.AcademicYear" class="form-control" placeholder="e.g. 2026" />
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.Semester" class="form-label">Semester</label>
-            <select asp-for="SettingsInput.Semester" class="form-select">
-                <option>Semester 1</option>
-                <option>Semester 2</option>
-            </select>
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.RegistrationPaymentPercentage" class="form-label">
-                Registration payment %
-            </label>
-            <input asp-for="SettingsInput.RegistrationPaymentPercentage"
-                   class="form-control"
-                   type="number"
-                   min="0"
-                   max="100"
-                   step="0.01" />
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.ExamSlipPaymentPercentage" class="form-label">
-                Exam slip payment %
-            </label>
-            <input asp-for="SettingsInput.ExamSlipPaymentPercentage"
-                   class="form-control"
-                   type="number"
-                   min="0"
-                   max="100"
-                   step="0.01" />
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.ResultsPaymentPercentage" class="form-label">
-                Results payment %
-            </label>
-            <input asp-for="SettingsInput.ResultsPaymentPercentage"
-                   class="form-control"
-                   type="number"
-                   min="0"
-                   max="100"
-                   step="0.01" />
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.LateRegistrationFee" class="form-label">
-                Late-registration fee (ZMW)
-            </label>
-            <input asp-for="SettingsInput.LateRegistrationFee"
-                   class="form-control"
-                   type="number"
-                   min="0"
-                   step="0.01" />
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.MaximumTotalCourses" class="form-label">
-                Maximum total courses
-            </label>
-            <input asp-for="SettingsInput.MaximumTotalCourses"
-                   class="form-control"
-                   type="number"
-                   min="1"
-                   max="4" />
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.MaximumCarryCourses" class="form-label">
-                Maximum carry courses (normal processing)
-            </label>
-            <input asp-for="SettingsInput.MaximumCarryCourses"
-                   class="form-control"
-                   type="number"
-                   min="0"
-                   max="4" />
-        </div>
-
-        <div>
-            <label asp-for="SettingsInput.FailedCoursesForRestriction" class="form-label">
-                Failed courses before restriction
-            </label>
-            <input asp-for="SettingsInput.FailedCoursesForRestriction"
-                   class="form-control"
-                   type="number"
-                   min="0"
-                   max="10" />
-        </div>
-
-        <div class="check-stack">
-            <div class="form-check">
-                <input asp-for="SettingsInput.IsRegistrationOpen" class="form-check-input" />
-                <label asp-for="SettingsInput.IsRegistrationOpen" class="form-check-label">
-                    Registration is open
-                </label>
-            </div>
-
-            <div class="form-check">
-                <input asp-for="SettingsInput.IsLateRegistrationOpen" class="form-check-input" />
-                <label asp-for="SettingsInput.IsLateRegistrationOpen" class="form-check-label">
-                    Late registration period is active
-                </label>
-            </div>
-        </div>
-
-        <div class="form-grid-full">
-            <button class="btn btn-primary" type="submit">Save academic rules</button>
-        </div>
-    </form>
-</section>
-
-<section class="split-grid">
-    <article class="card-surface form-card">
-        <p class="section-kicker">2 · Programmes</p>
-        <h2>Add programme</h2>
-
-        <form method="post" asp-page-handler="AddProgramme" class="stack-form">
-            <div>
-                <label asp-for="NewProgramme.Code" class="form-label">Programme code</label>
-                <input asp-for="NewProgramme.Code" class="form-control" placeholder="e.g. BSC-CS" />
-            </div>
-
-            <div>
-                <label asp-for="NewProgramme.Name" class="form-label">Programme name</label>
-                <input asp-for="NewProgramme.Name"
-                       class="form-control"
-                       placeholder="e.g. BSc Computer Science" />
-            </div>
-
-            <div>
-                <label asp-for="NewProgramme.TuitionAmount" class="form-label">
-                    Base tuition (ZMW)
-                </label>
-                <input asp-for="NewProgramme.TuitionAmount"
-                       class="form-control"
-                       type="number"
-                       min="0"
-                       step="0.01" />
-            </div>
-
-            <button class="btn btn-primary" type="submit">Add programme</button>
-        </form>
-
-        <hr />
-
-        @if (Model.Programmes.Count == 0)
+<div class="academic-content">
+        @if (Model.Section == "rules")
         {
-            <p class="muted-copy">No programmes have been added.</p>
-        }
-        else
-        {
-            @foreach (var programme in Model.Programmes)
-            {
-                <form method="post" asp-page-handler="UpdateProgramme" class="form-grid admin-edit-form">
-                    <input type="hidden" name="programmeId" value="@programme.Id" />
+
+            <section class="card-surface form-card">
+
+                <h2>Current period and access requirements</h2>
+            <details class="setup-guide">
+                <summary>Initial setup checklist</summary>
+                <ol class="setup-list">
+                    <li>Set the academic year, semester, and payment thresholds below.</li>
+                    <li><a asp-route-section="schools">Set up schools</a> and <a asp-route-section="programmes">programmes</a>.</li>
+                    <li><a asp-route-section="study-modes">Add study modes</a>, then <a asp-route-section="courses">add courses</a>.</li>
+                    <li><a asp-page="/Admin/StudentImport">Import students</a> or <a asp-page="/Admin/Students">add a student</a>.</li>
+                    <li><a asp-page="/Coordinator/Timetable">Review the timetable</a> before registration opens.</li>
+                </ol>
+            </details>
+
+                <form method="post" asp-page-handler="SaveSettings" class="form-grid">
+                    <div asp-validation-summary="ModelOnly" class="text-danger form-grid-full"></div>
 
                     <div>
-                        <label class="form-label">Programme code</label>
-                        <input class="form-control" value="@programme.Code" disabled />
+                        <label asp-for="SettingsInput.AcademicYear" class="form-label">Academic year</label>
+                        <input asp-for="SettingsInput.AcademicYear" class="form-control" placeholder="e.g. 2026" />
                     </div>
 
                     <div>
-                        <label class="form-label">Programme name</label>
-                        <input class="form-control" name="name" value="@programme.Name" />
+                        <label asp-for="SettingsInput.Semester" class="form-label">Semester</label>
+                        <select asp-for="SettingsInput.Semester" class="form-select">
+                            <option>Semester 1</option>
+                            <option>Semester 2</option>
+                        </select>
                     </div>
 
                     <div>
-                        <label class="form-label">Base tuition (ZMW)</label>
-                        <input class="form-control"
-                               name="tuitionAmount"
-                               type="number"
-                               min="0"
-                               step="0.01"
-                               value="@programme.TuitionAmount" />
+                        <label asp-for="SettingsInput.RegistrationPaymentPercentage" class="form-label">
+                            Registration payment %
+                        </label>
+                        <input asp-for="SettingsInput.RegistrationPaymentPercentage"
+                               class="form-control" type="number" min="0" max="100" step="0.01" />
+                    </div>
+
+                    <div>
+                        <label asp-for="SettingsInput.ExamSlipPaymentPercentage" class="form-label">
+                            Exam slip payment %
+                        </label>
+                        <input asp-for="SettingsInput.ExamSlipPaymentPercentage"
+                               class="form-control" type="number" min="0" max="100" step="0.01" />
+                    </div>
+
+                    <div>
+                        <label asp-for="SettingsInput.ResultsPaymentPercentage" class="form-label">
+                            Results payment %
+                        </label>
+                        <input asp-for="SettingsInput.ResultsPaymentPercentage"
+                               class="form-control" type="number" min="0" max="100" step="0.01" />
+                    </div>
+
+                    <div>
+                        <label asp-for="SettingsInput.LateRegistrationFee" class="form-label">
+                            Late-registration fee (ZMW)
+                        </label>
+                        <input asp-for="SettingsInput.LateRegistrationFee"
+                               class="form-control" type="number" min="0" step="0.01" />
+                    </div>
+
+                    <div>
+                        <label asp-for="SettingsInput.MaximumTotalCourses" class="form-label">
+                            Maximum total courses
+                        </label>
+                        <input asp-for="SettingsInput.MaximumTotalCourses"
+                               class="form-control" type="number" min="1" max="4" />
+                    </div>
+
+                    <div>
+                        <label asp-for="SettingsInput.MaximumCarryCourses" class="form-label">
+                            Maximum carry courses
+                        </label>
+                        <input asp-for="SettingsInput.MaximumCarryCourses"
+                               class="form-control" type="number" min="0" max="4" />
+                    </div>
+
+                    <div>
+                        <label asp-for="SettingsInput.FailedCoursesForRestriction" class="form-label">
+                            Failed courses before restriction
+                        </label>
+                        <input asp-for="SettingsInput.FailedCoursesForRestriction"
+                               class="form-control" type="number" min="0" max="10" />
                     </div>
 
                     <div class="check-stack">
-                        <input type="hidden" name="isActive" value="false" />
-                        <label class="form-check-label">
-                            <input class="form-check-input"
-                                   name="isActive"
-                                   type="checkbox"
-                                   value="true"
-                                   checked="@programme.IsActive" />
-                            Active
-                        </label>
+                        <div class="form-check">
+                            <input asp-for="SettingsInput.IsRegistrationOpen" class="form-check-input" />
+                            <label asp-for="SettingsInput.IsRegistrationOpen" class="form-check-label">
+                                Registration is open
+                            </label>
+                        </div>
 
-                        <button class="btn btn-sm btn-outline-primary" type="submit">
-                            Save programme
-                        </button>
-                    </div>
-                </form>
-            }
-        }
-    </article>
-
-    <article class="card-surface form-card">
-        <p class="section-kicker">3 · Study modes and payment accounts</p>
-        <h2>Add study mode</h2>
-        <p class="muted-copy">
-            Create Full-time, Part-time, and Evening as separate modes.
-            Part-time should normally use a 1–2 course limit.
-        </p>
-
-        <form method="post" asp-page-handler="AddStudyMode" class="stack-form">
-            <div>
-                <label asp-for="NewStudyMode.Name" class="form-label">Study mode</label>
-                <input asp-for="NewStudyMode.Name"
-                       class="form-control"
-                       placeholder="Full-time, Part-time, or Evening" />
-            </div>
-
-            <div>
-                <label asp-for="NewStudyMode.Description" class="form-label">Description</label>
-                <input asp-for="NewStudyMode.Description"
-                       class="form-control"
-                       placeholder="How this mode is delivered" />
-            </div>
-
-            <div class="form-grid">
-                <div>
-                    <label asp-for="NewStudyMode.MaximumCourses" class="form-label">
-                        Maximum courses
-                    </label>
-                    <input asp-for="NewStudyMode.MaximumCourses"
-                           class="form-control"
-                           type="number"
-                           min="1"
-                           max="4" />
-                </div>
-
-                <div>
-                    <label asp-for="NewStudyMode.AdditionalFee" class="form-label">
-                        Mode fee (ZMW)
-                    </label>
-                    <input asp-for="NewStudyMode.AdditionalFee"
-                           class="form-control"
-                           type="number"
-                           min="0"
-                           step="0.01" />
-                </div>
-            </div>
-
-            <div>
-                <label asp-for="NewStudyMode.PaymentAccountName" class="form-label">
-                    Payment account name
-                </label>
-                <input asp-for="NewStudyMode.PaymentAccountName"
-                       class="form-control"
-                       placeholder="e.g. CBU Full-time Fees" />
-            </div>
-
-            <div>
-                <label asp-for="NewStudyMode.PaymentAccountReference" class="form-label">
-                    Payment account / reference
-                </label>
-                <input asp-for="NewStudyMode.PaymentAccountReference"
-                       class="form-control"
-                       placeholder="e.g. FT-2026" />
-            </div>
-
-            <button class="btn btn-primary" type="submit">Add study mode</button>
-        </form>
-
-        <hr />
-
-        @if (Model.StudyModes.Count == 0)
-        {
-            <p class="muted-copy">No study modes have been added.</p>
-        }
-        else
-        {
-            @foreach (var studyMode in Model.StudyModes)
-            {
-                <form method="post" asp-page-handler="UpdateStudyMode" class="form-grid admin-edit-form">
-                    <input type="hidden" name="studyModeId" value="@studyMode.Id" />
-
-                    <div>
-                        <label class="form-label">Study mode</label>
-                        <input class="form-control" value="@studyMode.Name" disabled />
-                    </div>
-
-                    <div>
-                        <label class="form-label">Description</label>
-                        <input class="form-control" name="description" value="@studyMode.Description" />
-                    </div>
-
-                    <div>
-                        <label class="form-label">Maximum courses</label>
-                        <input class="form-control"
-                               name="maximumCourses"
-                               type="number"
-                               min="1"
-                               max="4"
-                               value="@studyMode.MaximumCourses" />
-                    </div>
-
-                    <div>
-                        <label class="form-label">Mode fee (ZMW)</label>
-                        <input class="form-control"
-                               name="additionalFee"
-                               type="number"
-                               min="0"
-                               step="0.01"
-                               value="@studyMode.AdditionalFee" />
-                    </div>
-
-                    <div>
-                        <label class="form-label">Payment account name</label>
-                        <input class="form-control"
-                               name="paymentAccountName"
-                               value="@studyMode.PaymentAccountName" />
-                    </div>
-
-                    <div>
-                        <label class="form-label">Payment account / reference</label>
-                        <input class="form-control"
-                               name="paymentAccountReference"
-                               value="@studyMode.PaymentAccountReference" />
-                    </div>
-
-                    <div class="check-stack form-grid-full">
-                        <input type="hidden" name="isActive" value="false" />
-
-                        <label class="form-check-label">
-                            <input class="form-check-input"
-                                   name="isActive"
-                                   type="checkbox"
-                                   value="true"
-                                   checked="@studyMode.IsActive" />
-                            Active
-                        </label>
-
-                        <div>
-                            <button class="btn btn-sm btn-outline-primary" type="submit">
-                                Save study mode
-                            </button>
+                        <div class="form-check">
+                            <input asp-for="SettingsInput.IsLateRegistrationOpen" class="form-check-input" />
+                            <label asp-for="SettingsInput.IsLateRegistrationOpen" class="form-check-label">
+                                Late registration period is active
+                            </label>
                         </div>
                     </div>
+
+                    <div class="form-grid-full">
+                        <button class="btn btn-primary" type="submit">Save academic rules</button>
+                    </div>
                 </form>
-            }
+            </section>
         }
-    </article>
-</section>
+        @if (Model.Section == "schools")
+        {
+            <section class="card-surface form-card">
 
-<section class="card-surface form-card">
-    <p class="section-kicker">4 · Courses and prerequisites</p>
-    <h2>Add a course</h2>
+                <h2>Add a school</h2>
+                <p class="muted-copy">
+                    A school groups programmes and controls which timetable a school coordinator can manage.
+                </p>
 
-    @if (Model.Programmes.Count == 0)
-    {
-        <p class="alert alert-warning mb-0">Add a programme first.</p>
-    }
-    else
-    {
-        <form method="post" asp-page-handler="AddCourse" class="form-grid">
-            <div>
-                <label asp-for="NewCourse.Code" class="form-label">Course code</label>
-                <input asp-for="NewCourse.Code" class="form-control" placeholder="e.g. CS301" />
-            </div>
+                <form method="post" asp-page-handler="AddSchool" class="form-grid">
+                    <div>
+                        <label asp-for="NewSchool.Code" class="form-label">School code</label>
+                        <input asp-for="NewSchool.Code" class="form-control" placeholder="e.g. ICT" />
+                    </div>
 
-            <div>
-                <label asp-for="NewCourse.Title" class="form-label">Course title</label>
-                <input asp-for="NewCourse.Title" class="form-control" />
-            </div>
+                    <div>
+                        <label asp-for="NewSchool.Name" class="form-label">School name</label>
+                        <input asp-for="NewSchool.Name"
+                               class="form-control"
+                               placeholder="e.g. School of Information and Communication Technology" />
+                    </div>
 
-            <div>
-                <label asp-for="NewCourse.ProgrammeId" class="form-label">Programme</label>
-                <select asp-for="NewCourse.ProgrammeId" class="form-select">
-                    <option value="0">Choose programme</option>
-                    @foreach (var programme in Model.Programmes.Where(item => item.IsActive))
-                    {
-                        <option value="@programme.Id">@programme.Code · @programme.Name</option>
-                    }
-                </select>
-            </div>
+                    <div class="align-self-end">
+                        <button class="btn btn-primary" type="submit">Add school</button>
+                    </div>
+                </form>
 
-            <div>
-                <label asp-for="NewCourse.StudyModeId" class="form-label">Study mode</label>
-                <select asp-for="NewCourse.StudyModeId" class="form-select">
-                    <option value="0">All programme study modes</option>
-                    @foreach (var studyMode in Model.StudyModes.Where(item => item.IsActive))
-                    {
-                        <option value="@studyMode.Id">@studyMode.Name only</option>
-                    }
-                </select>
-            </div>
+                <hr />
 
-            <div>
-                <label asp-for="NewCourse.YearLevel" class="form-label">Year level</label>
-                <input asp-for="NewCourse.YearLevel"
-                       class="form-control"
-                       type="number"
-                       min="1"
-                       max="8" />
-            </div>
+                @if (Model.Schools.Count == 0)
+                {
+                    <p class="muted-copy">No schools have been added yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>School</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var school in Model.Schools)
+                                {
+                                    <tr>
+                                        <td><strong>@school.Code</strong></td>
+                                        <td>@school.Name</td>
+                                        <td>
+                                            <span class="status-pill @(school.IsActive ? "status-success" : "status-muted")">
+                                                @(school.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        }
+        @if (Model.Section == "programmes")
+        {
+            <section class="card-surface directory-panel">
+                <h2>Programmes</h2>
+                <details class="directory-add" open="@(ViewData.ModelState.ErrorCount > 0)">
+<summary>Add programme</summary>
+<form method="post" asp-page-handler="AddProgramme" class="stack-form">
+                        <div>
+                            <label asp-for="NewProgramme.Code" class="form-label">Programme code</label>
+                            <input asp-for="NewProgramme.Code" class="form-control" placeholder="e.g. BCS" />
+                        </div>
 
-            <div>
-                <label asp-for="NewCourse.CreditUnits" class="form-label">Credit units</label>
-                <input asp-for="NewCourse.CreditUnits"
-                       class="form-control"
-                       type="number"
-                       min="1"
-                       max="30" />
-            </div>
+                        <div>
+                            <label asp-for="NewProgramme.SchoolId" class="form-label">School</label>
+                            <select asp-for="NewProgramme.SchoolId" class="form-select">
+                                <option value="0">Assign later</option>
+                                @foreach (var school in Model.Schools.Where(item => item.IsActive))
+                                {
+                                    <option value="@school.Id">@school.Code · @school.Name</option>
+                                }
+                            </select>
+                        </div>
 
-            <div>
-                <label asp-for="NewCourse.SemesterOffered" class="form-label">
-                    Semester offered
-                </label>
-                <select asp-for="NewCourse.SemesterOffered" class="form-select">
-                    <option>Semester 1</option>
-                    <option>Semester 2</option>
-                    <option>Both</option>
-                </select>
-            </div>
+                        <div>
+                            <label asp-for="NewProgramme.Name" class="form-label">Programme name</label>
+                            <input asp-for="NewProgramme.Name"
+                                   class="form-control"
+                                   placeholder="e.g. Bachelor of Science in Computer Science" />
+                        </div>
 
-            <div>
-                <label asp-for="NewCourse.ExpectedEnrollment" class="form-label">
-                    Expected enrolment
-                </label>
-                <input asp-for="NewCourse.ExpectedEnrollment"
-                       class="form-control"
-                       type="number"
-                       min="1" />
-            </div>
+                        <div>
+                            <label asp-for="NewProgramme.TuitionAmount" class="form-label">
+                                Base tuition (ZMW)
+                            </label>
+                            <input asp-for="NewProgramme.TuitionAmount"
+                                   class="form-control" type="number" min="0" step="0.01" />
+                        </div>
 
-            <div>
-                <label asp-for="NewCourse.CourseType" class="form-label">Course type</label>
-                <select asp-for="NewCourse.CourseType" class="form-select">
-                    <option>Core</option>
-                    <option>Elective</option>
-                    <option>Carry eligible</option>
-                </select>
-            </div>
+                        <button class="btn btn-primary" type="submit">Add programme</button>
+                    </form>
+</details>
+                @if (Model.Programmes.Count == 0)
+                {
+                    <p>No programmes have been added.</p>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle directory-table">
+<thead><tr><th scope="col">Code</th><th scope="col">Programme</th><th scope="col">School</th><th scope="col">Tuition (ZMW)</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+<tbody>
+@foreach (var programme in Model.Programmes)
+{
+    <tr>
+        <td><strong>@programme.Code</strong></td>
+        <td>@programme.Name</td>
+        <td>@(programme.School?.Code ?? "Unassigned")</td>
+        <td>@programme.TuitionAmount.ToString("N2")</td>
+        <td>@(programme.IsActive ? "Active" : "Inactive")</td>
+        <td><details><summary>Edit programme</summary><form method="post" asp-page-handler="UpdateProgramme" class="stack-form">
+                                <input type="hidden" name="programmeId" value="@programme.Id" />
 
-            <div class="form-grid-full">
-                <button class="btn btn-primary" type="submit">Add course</button>
-            </div>
-        </form>
-    }
+                                <div>
+                                    <label class="form-label">Programme code</label>
+                                    <input class="form-control" value="@programme.Code" disabled />
+                                </div>
 
-    <hr />
+                                <div>
+                                    <label class="form-label">Programme name</label>
+                                    <input class="form-control" name="name" value="@programme.Name" />
+                                </div>
 
-    @if (Model.Courses.Count == 0)
-    {
-        <p class="muted-copy">No courses have been added.</p>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Course</th>
-                        <th>Programme / mode</th>
-                        <th>Level</th>
-                        <th>Offered</th>
-                        <th>Expected</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var course in Model.Courses)
-                    {
-                        <tr>
-                            <td>
-                                <strong>@course.Code</strong><br />
-                                <span class="muted-copy">@course.Title</span>
-                            </td>
-                            <td>
-                                @course.Programme?.Code<br />
-                                <span class="muted-copy">@(course.StudyMode?.Name ?? "All modes")</span>
-                            </td>
-                            <td>Year @course.YearLevel · @course.CreditUnits CU</td>
-                            <td>@course.SemesterOffered</td>
-                            <td>@course.ExpectedEnrollment</td>
-                            <td>
-                                <span class="status-pill @(course.IsActive ? "status-success" : "status-muted")">
-                                    @(course.IsActive ? "Active" : "Inactive")
-                                </span>
-                            </td>
-                            <td>
-                                <form method="post" asp-page-handler="ToggleCourse">
-                                    <input type="hidden" name="courseId" value="@course.Id" />
-                                    <input type="hidden" name="isActive" value="@(!course.IsActive)" />
+                                <div>
+                                    <label class="form-label">Base tuition (ZMW)</label>
+                                    <input class="form-control" name="tuitionAmount"
+                                           type="number" min="0" step="0.01"
+                                           value="@programme.TuitionAmount" />
+                                </div>
+
+                                <div class="check-stack">
+                                    <label>Status
+<select name="isActive" class="form-select">
+<option value="true" selected="@(programme.IsActive)">Active</option>
+<option value="false" selected="@(!programme.IsActive)">Inactive</option>
+</select>
+</label>
                                     <button class="btn btn-sm btn-outline-primary" type="submit">
-                                        @(course.IsActive ? "Deactivate" : "Activate")
+                                        Save programme
                                     </button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                                </div>
+                            </form></details><details><summary>Assign school</summary><form method="post"
+                                                      asp-page-handler="AssignProgrammeSchool"
+                                                      class="stack-form">
+                                                    <input type="hidden" name="programmeId" value="@programme.Id" />
+                                                    <label>School<select name="schoolId" class="form-select">
+                                                        <option value="">Not assigned</option>
+                                                        @foreach (var school in Model.Schools.Where(item => item.IsActive))
+                                                        {
+                                                            <option value="@school.Id"
+                                                                    selected="@(programme.SchoolId == school.Id)">
+                                                                @school.Code · @school.Name
+                                                            </option>
+                                                        }
+                                                    </select></label>
+                                                    <button class="btn btn-sm btn-outline-primary" type="submit">
+                                                        Save
+                                                    </button>
+                                                </form></details></td>
+    </tr>
+}
+</tbody></table></div>
+                }
+            </section>
+        }
+        @if (Model.Section == "study-modes")
+        {
+            <section class="card-surface directory-panel">
+                <h2>Study modes</h2>
+                <details class="directory-add" open="@(ViewData.ModelState.ErrorCount > 0)">
+<summary>Add study mode</summary>
+<form method="post" asp-page-handler="AddStudyMode" class="stack-form">
+                        <div>
+                            <label asp-for="NewStudyMode.Name" class="form-label">Study mode</label>
+                            <input asp-for="NewStudyMode.Name"
+                                   class="form-control"
+                                   placeholder="Full-time, Part-time, or Evening" />
+                        </div>
 
-        <div class="subsection">
-            <h3>Define prerequisites</h3>
+                        <div>
+                            <label asp-for="NewStudyMode.Description" class="form-label">Description</label>
+                            <input asp-for="NewStudyMode.Description"
+                                   class="form-control"
+                                   placeholder="How this mode is delivered" />
+                        </div>
 
-            <form method="post" asp-page-handler="AddPrerequisite" class="inline-form">
-                <select asp-for="NewPrerequisite.CourseId" class="form-select">
-                    <option value="0">Course requiring a pass</option>
-                    @foreach (var course in Model.Courses.Where(item => item.IsActive))
+                        <div class="form-grid">
+                            <div>
+                                <label asp-for="NewStudyMode.MaximumCourses" class="form-label">
+                                    Maximum courses
+                                </label>
+                                <input asp-for="NewStudyMode.MaximumCourses"
+                                       class="form-control" type="number" min="1" max="4" />
+                            </div>
+
+                            <div>
+                                <label asp-for="NewStudyMode.AdditionalFee" class="form-label">
+                                    Mode fee (ZMW)
+                                </label>
+                                <input asp-for="NewStudyMode.AdditionalFee"
+                                       class="form-control" type="number" min="0" step="0.01" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label asp-for="NewStudyMode.PaymentAccountName" class="form-label">
+                                Payment account name
+                            </label>
+                            <input asp-for="NewStudyMode.PaymentAccountName"
+                                   class="form-control"
+                                   placeholder="e.g. CBU Full-time Fees" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewStudyMode.PaymentAccountReference" class="form-label">
+                                Payment account / reference
+                            </label>
+                            <input asp-for="NewStudyMode.PaymentAccountReference"
+                                   class="form-control"
+                                   placeholder="e.g. FT-2026" />
+                        </div>
+
+                        <button class="btn btn-primary" type="submit">Add study mode</button>
+                    </form>
+</details>
+                @if (Model.StudyModes.Count == 0)
+                {
+                    <p>No study modes have been added.</p>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle directory-table">
+<thead><tr><th scope="col">Mode</th><th scope="col">Maximum courses</th><th scope="col">Fee (ZMW)</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+<tbody>
+@foreach (var studyMode in Model.StudyModes)
+{
+    <tr>
+        <td><strong>@studyMode.Name</strong></td>
+        <td>@studyMode.MaximumCourses</td>
+        <td>@studyMode.AdditionalFee.ToString("N2")</td>
+        <td>@(studyMode.IsActive ? "Active" : "Inactive")</td>
+        <td><details><summary>Edit study mode</summary><form method="post" asp-page-handler="UpdateStudyMode" class="stack-form">
+                                <input type="hidden" name="studyModeId" value="@studyMode.Id" />
+
+                                <div>
+                                    <label class="form-label">Study mode</label>
+                                    <input class="form-control" value="@studyMode.Name" disabled />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Description</label>
+                                    <input class="form-control" name="description" value="@studyMode.Description" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Maximum courses</label>
+                                    <input class="form-control" name="maximumCourses"
+                                           type="number" min="1" max="4"
+                                           value="@studyMode.MaximumCourses" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Mode fee (ZMW)</label>
+                                    <input class="form-control" name="additionalFee"
+                                           type="number" min="0" step="0.01"
+                                           value="@studyMode.AdditionalFee" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Payment account name</label>
+                                    <input class="form-control" name="paymentAccountName"
+                                           value="@studyMode.PaymentAccountName" />
+                                </div>
+
+                                <div>
+                                    <label class="form-label">Payment account / reference</label>
+                                    <input class="form-control" name="paymentAccountReference"
+                                           value="@studyMode.PaymentAccountReference" />
+                                </div>
+
+                                <div class="check-stack form-grid-full">
+                                    <label>Status
+<select name="isActive" class="form-select">
+<option value="true" selected="@(studyMode.IsActive)">Active</option>
+<option value="false" selected="@(!studyMode.IsActive)">Inactive</option>
+</select>
+</label>
+
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                                            Save study mode
+                                        </button>
+                                    </div>
+                                </div>
+                            </form></details></td>
+    </tr>
+}
+</tbody></table></div>
+                }
+            </section>
+        }
+        @if (Model.Section == "courses")
+        {
+            <section class="card-surface form-card">
+
+                <h2>Add a course</h2>
+
+                @if (Model.Programmes.Count == 0)
+                {
+                    <p class="alert alert-warning mb-0">Add a programme first.</p>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="AddCourse" class="form-grid">
+                        <div>
+                            <label asp-for="NewCourse.Code" class="form-label">Course code</label>
+                            <input asp-for="NewCourse.Code" class="form-control" placeholder="e.g. CS301" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.Title" class="form-label">Course title</label>
+                            <input asp-for="NewCourse.Title" class="form-control" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.ProgrammeId" class="form-label">Programme</label>
+                            <select asp-for="NewCourse.ProgrammeId" class="form-select">
+                                <option value="0">Choose programme</option>
+                                @foreach (var programme in Model.Programmes.Where(item => item.IsActive))
+                                {
+                                    <option value="@programme.Id">@programme.Code · @programme.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.StudyModeId" class="form-label">Study mode</label>
+                            <select asp-for="NewCourse.StudyModeId" class="form-select">
+                                <option value="0">All programme study modes</option>
+                                @foreach (var studyMode in Model.StudyModes.Where(item => item.IsActive))
+                                {
+                                    <option value="@studyMode.Id">@studyMode.Name only</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.YearLevel" class="form-label">Year level</label>
+                            <input asp-for="NewCourse.YearLevel"
+                                   class="form-control" type="number" min="1" max="8" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.CreditUnits" class="form-label">Credit units</label>
+                            <input asp-for="NewCourse.CreditUnits"
+                                   class="form-control" type="number" min="1" max="30" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.SemesterOffered" class="form-label">
+                                Semester offered
+                            </label>
+                            <select asp-for="NewCourse.SemesterOffered" class="form-select">
+                                <option>Semester 1</option>
+                                <option>Semester 2</option>
+                                <option>Both</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.ExpectedEnrollment" class="form-label">
+                                Expected enrolment
+                            </label>
+                            <input asp-for="NewCourse.ExpectedEnrollment"
+                                   class="form-control" type="number" min="1" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewCourse.CourseType" class="form-label">Course type</label>
+                            <select asp-for="NewCourse.CourseType" class="form-select">
+                                <option>Core</option>
+                                <option>Elective</option>
+                                <option>Carry eligible</option>
+                            </select>
+                        </div>
+
+                        <div class="form-grid-full">
+                            <button class="btn btn-primary" type="submit">Add course</button>
+                        </div>
+                    </form>
+                }
+
+                <hr />
+
+                @if (Model.Courses.Count == 0)
+                {
+                    <p class="muted-copy">No courses have been added.</p>
+                }
+                else
+                {
+                    <h2>Course catalogue (@Model.Courses.Count)</h2>
+
+                    @foreach (var programmeGroup in Model.Courses
+                        .OrderBy(course => course.Programme?.Code)
+                        .ThenBy(course => course.YearLevel)
+                        .ThenBy(course => course.SemesterOffered)
+                        .ThenBy(course => course.Code)
+                        .GroupBy(course => new
+                        {
+                            ProgrammeCode = course.Programme?.Code ?? "UNASSIGNED",
+                            ProgrammeName = course.Programme?.Name ?? "Programme not assigned"
+                        }))
                     {
-                        <option value="@course.Id">@course.Code · @course.Title</option>
+                        <details class="academic-programme">
+                            <summary>
+                                <strong>@programmeGroup.Key.ProgrammeCode</strong>
+                                @programmeGroup.Key.ProgrammeName
+                                <span>@programmeGroup.Count() courses</span>
+                            </summary>
+
+                            @foreach (var yearGroup in programmeGroup
+                                .OrderBy(course => course.YearLevel)
+                                .GroupBy(course => course.YearLevel))
+                            {
+                                <div class="subsection">
+                                    <h3>Year @yearGroup.Key</h3>
+
+                                    @foreach (var semesterGroup in yearGroup
+                                        .OrderBy(course => SemesterOrder(course.SemesterOffered))
+                                        .GroupBy(course => course.SemesterOffered))
+                                    {
+                                        <div class="mt-4">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h4 class="mb-0">@semesterGroup.Key</h4>
+                                                <span class="muted-copy">@semesterGroup.Count() course(s)</span>
+                                            </div>
+
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Course</th>
+                                                            <th>Study mode</th>
+                                                            <th>Credit units</th>
+                                                            <th>Weekly sessions</th>
+                                                            <th>Expected students</th>
+                                                            <th>Status</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var course in semesterGroup.OrderBy(course => course.Code))
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    <strong>@course.Code</strong><br />
+                                                                    <span class="muted-copy">@course.Title</span>
+                                                                </td>
+                                                                <td>@(course.StudyMode?.Name ?? "All modes")</td>
+                                                                <td>@course.CreditUnits CU</td>
+                                                                <td>@course.SessionsPerWeek per week</td>
+                                                                <td>@course.ExpectedEnrollment</td>
+                                                                <td>
+                                                                    <span class="status-pill @(course.IsActive ? "status-success" : "status-muted")">
+                                                                        @(course.IsActive ? "Active" : "Inactive")
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <form method="post" asp-page-handler="ToggleCourse">
+                                                                        <input type="hidden" name="courseId" value="@course.Id" />
+                                                                        <input type="hidden" name="isActive" value="@(!course.IsActive)" />
+                                                                        <button class="btn btn-sm btn-outline-primary" type="submit">
+                                                                            @(course.IsActive ? "Deactivate" : "Activate")
+                                                                        </button>
+                                                                    </form>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </details>
                     }
-                </select>
 
-                <select asp-for="NewPrerequisite.PrerequisiteCourseId" class="form-select">
-                    <option value="0">Required passed course</option>
-                    @foreach (var course in Model.Courses.Where(item => item.IsActive))
-                    {
-                        <option value="@course.Id">@course.Code · @course.Title</option>
-                    }
-                </select>
+                    <div class="subsection">
+                        <h3>Define prerequisites</h3>
 
-                <button class="btn btn-primary" type="submit">Add prerequisite</button>
-            </form>
+                        <form method="post" asp-page-handler="AddPrerequisite" class="inline-form">
+                            <select asp-for="NewPrerequisite.CourseId" class="form-select">
+                                <option value="0">Course requiring a pass</option>
+                                @foreach (var course in Model.Courses
+                                    .Where(item => item.IsActive)
+                                    .OrderBy(item => item.Programme?.Code)
+                                    .ThenBy(item => item.YearLevel)
+                                    .ThenBy(item => item.Code))
+                                {
+                                    <option value="@course.Id">
+                                        @course.Programme?.Code · Year @course.YearLevel · @course.Code
+                                    </option>
+                                }
+                            </select>
 
-            @if (Model.Prerequisites.Count > 0)
-            {
-                <ul class="tag-list">
-                    @foreach (var prerequisite in Model.Prerequisites)
-                    {
-                        <li>
-                            <strong>@prerequisite.Course.Code</strong>
-                            requires
-                            <strong>@prerequisite.PrerequisiteCourse.Code</strong>
+                            <select asp-for="NewPrerequisite.PrerequisiteCourseId" class="form-select">
+                                <option value="0">Required passed course</option>
+                                @foreach (var course in Model.Courses
+                                    .Where(item => item.IsActive)
+                                    .OrderBy(item => item.Programme?.Code)
+                                    .ThenBy(item => item.YearLevel)
+                                    .ThenBy(item => item.Code))
+                                {
+                                    <option value="@course.Id">
+                                        @course.Programme?.Code · Year @course.YearLevel · @course.Code
+                                    </option>
+                                }
+                            </select>
 
-                            <form method="post" asp-page-handler="RemovePrerequisite">
-                                <input type="hidden" name="courseId" value="@prerequisite.CourseId" />
-                                <input type="hidden"
-                                       name="prerequisiteCourseId"
-                                       value="@prerequisite.PrerequisiteCourseId" />
-                                <button class="link-danger" type="submit">Remove</button>
-                            </form>
-                        </li>
-                    }
+                            <button class="btn btn-primary" type="submit">Add prerequisite</button>
+                        </form>
+
+                        @if (Model.Prerequisites.Count > 0)
+                        {
+                            <ul class="tag-list">
+                                @foreach (var prerequisite in Model.Prerequisites)
+                                {
+                                    <li>
+                                        <strong>@prerequisite.Course.Code</strong>
+                                        requires
+                                        <strong>@prerequisite.PrerequisiteCourse.Code</strong>
+
+                                        <form method="post" asp-page-handler="RemovePrerequisite">
+                                            <input type="hidden" name="courseId" value="@prerequisite.CourseId" />
+                                            <input type="hidden"
+                                                   name="prerequisiteCourseId"
+                                                   value="@prerequisite.PrerequisiteCourseId" />
+                                            <button class="link-danger" type="submit">Remove</button>
+                                        </form>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </section>
+        }
+        @if (Model.Section == "resources")
+        {
+            <section class="card-surface directory-panel">
+                <h2>Lecturers</h2>
+                <p><a asp-page="/Admin/CourseLecturerAssignments">Manage course–lecturer assignments</a></p><details class="directory-add" open="@(ViewData.ModelState.ErrorCount > 0)">
+<summary>Add lecturer</summary>
+<form method="post" asp-page-handler="AddLecturer" class="stack-form">
+                        <div>
+                            <label asp-for="NewLecturer.StaffNumber" class="form-label">Staff number</label>
+                            <input asp-for="NewLecturer.StaffNumber" class="form-control" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewLecturer.FullName" class="form-label">Full name</label>
+                            <input asp-for="NewLecturer.FullName" class="form-control" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewLecturer.Specialisation" class="form-label">Specialisation</label>
+                            <input asp-for="NewLecturer.Specialisation" class="form-control" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewLecturer.AvailableDays" class="form-label">Available days</label>
+                            <input asp-for="NewLecturer.AvailableDays"
+                                   class="form-control"
+                                   placeholder="Monday|Wednesday|Friday" />
+                        </div>
+
+                        <button class="btn btn-primary" type="submit">Add lecturer</button>
+                    </form>
+</details>
+                @if (Model.Lecturers.Count == 0)
+                {
+                    <p>No lecturers have been added.</p>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle directory-table">
+<thead><tr><th scope="col">Staff number</th><th scope="col">Lecturer</th><th scope="col">Specialisation</th><th scope="col">Available days</th></tr></thead>
+<tbody>
+@foreach (var lecturer in Model.Lecturers)
+{
+    <tr>
+        <td>@lecturer.StaffNumber</td>
+        <td><strong>@lecturer.FullName</strong></td>
+        <td>@lecturer.Specialisation</td>
+        <td>@lecturer.AvailableDays.Replace("|", ", ")</td>
+    </tr>
+}
+</tbody></table></div>
+                }
+            </section>
+        }
+        @if (Model.Section == "rooms")
+        {
+            <section class="card-surface directory-panel">
+                <h2>Rooms</h2>
+                <details class="directory-add" open="@(ViewData.ModelState.ErrorCount > 0)">
+<summary>Add room</summary>
+<form method="post" asp-page-handler="AddRoom" class="stack-form">
+                        <div>
+                            <label asp-for="NewRoom.Code" class="form-label">Room code</label>
+                            <input asp-for="NewRoom.Code" class="form-control" />
+                        </div>
+
+                        <div>
+                            <label asp-for="NewRoom.Name" class="form-label">Room name</label>
+                            <input asp-for="NewRoom.Name" class="form-control" />
+                        </div>
+
+                        <div class="form-grid">
+                            <div>
+                                <label asp-for="NewRoom.Capacity" class="form-label">Capacity</label>
+                                <input asp-for="NewRoom.Capacity"
+                                       class="form-control" type="number" min="1" />
+                            </div>
+
+                            <div>
+                                <label asp-for="NewRoom.RoomType" class="form-label">Room type</label>
+                                <input asp-for="NewRoom.RoomType"
+                                       class="form-control"
+                                       placeholder="Lecture room or lab" />
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" type="submit">Add room</button>
+                    </form>
+</details>
+                @if (Model.Rooms.Count == 0)
+                {
+                    <p>No rooms have been added.</p>
+                }
+                else
+                {
+                    <div class="table-responsive"><table class="table align-middle directory-table">
+<thead><tr><th scope="col">Code</th><th scope="col">Room</th><th scope="col">Type</th><th scope="col">Seats</th></tr></thead>
+<tbody>
+@foreach (var room in Model.Rooms)
+{
+    <tr>
+        <td><strong>@room.Code</strong></td>
+        <td>@room.Name</td>
+        <td>@room.RoomType</td>
+        <td>@room.Capacity</td>
+    </tr>
+}
+</tbody></table></div>
+                }
+            </section>
+        }
+        @if (Model.Section == "imports")
+        {
+            <section class="card-surface form-card">
+                <h2>CSV imports</h2>
+                <ul class="academic-imports">
+                    <li><a asp-page="/Admin/ProgrammeImport">Import programmes</a></li>
+                    <li><a asp-page="/Admin/CourseImport">Import courses</a></li>
+                    <li><a asp-page="/Admin/LecturerImport">Import lecturers</a></li>
+                    <li><a asp-page="/Admin/RoomImport">Import rooms</a></li>
+                    <li><a asp-page="/Admin/CourseLecturerAssignmentImport">Import lecturer assignments</a></li>
+                    <li><a asp-page="/Admin/StudentImport">Import students</a></li>
                 </ul>
-            }
-        </div>
-    }
-</section>
-
-<section class="split-grid">
-    <article class="card-surface form-card">
-        <p class="section-kicker">5 · Lecturers</p>
-        <h2>Add lecturer availability</h2>
-
-        <form method="post" asp-page-handler="AddLecturer" class="stack-form">
-            <div>
-                <label asp-for="NewLecturer.StaffNumber" class="form-label">Staff number</label>
-                <input asp-for="NewLecturer.StaffNumber" class="form-control" />
-            </div>
-
-            <div>
-                <label asp-for="NewLecturer.FullName" class="form-label">Full name</label>
-                <input asp-for="NewLecturer.FullName" class="form-control" />
-            </div>
-
-            <div>
-                <label asp-for="NewLecturer.Specialisation" class="form-label">Specialisation</label>
-                <input asp-for="NewLecturer.Specialisation" class="form-control" />
-            </div>
-
-            <div>
-                <label asp-for="NewLecturer.AvailableDays" class="form-label">Available days</label>
-                <input asp-for="NewLecturer.AvailableDays"
-                       class="form-control"
-                       placeholder="Monday|Wednesday|Friday" />
-            </div>
-
-            <button class="btn btn-primary" type="submit">Add lecturer</button>
-        </form>
-
-        @if (Model.Lecturers.Count > 0)
-        {
-            <ul class="plain-list">
-                @foreach (var lecturer in Model.Lecturers)
-                {
-                    <li>
-                        <strong>@lecturer.StaffNumber</strong> · @lecturer.FullName<br />
-                        <span class="muted-copy">@lecturer.AvailableDays</span>
-                    </li>
-                }
-            </ul>
+            </section>
         }
-    </article>
+    </div>
 
-    <article class="card-surface form-card">
-        <p class="section-kicker">6 · Rooms</p>
-        <h2>Add teaching room</h2>
 
-        <form method="post" asp-page-handler="AddRoom" class="stack-form">
-            <div>
-                <label asp-for="NewRoom.Code" class="form-label">Room code</label>
-                <input asp-for="NewRoom.Code" class="form-control" />
-            </div>
-
-            <div>
-                <label asp-for="NewRoom.Name" class="form-label">Room name</label>
-                <input asp-for="NewRoom.Name" class="form-control" />
-            </div>
-
-            <div class="form-grid">
-                <div>
-                    <label asp-for="NewRoom.Capacity" class="form-label">Capacity</label>
-                    <input asp-for="NewRoom.Capacity"
-                           class="form-control"
-                           type="number"
-                           min="1" />
-                </div>
-
-                <div>
-                    <label asp-for="NewRoom.RoomType" class="form-label">Room type</label>
-                    <input asp-for="NewRoom.RoomType"
-                           class="form-control"
-                           placeholder="Lecture room or lab" />
-                </div>
-            </div>
-
-            <button class="btn btn-primary" type="submit">Add room</button>
-        </form>
-
-        @if (Model.Rooms.Count > 0)
-        {
-            <ul class="plain-list">
-                @foreach (var room in Model.Rooms)
-                {
-                    <li>
-                        <strong>@room.Code</strong> · @room.Name<br />
-                        <span class="muted-copy">
-                            @room.RoomType · capacity @room.Capacity
-                        </span>
-                    </li>
-                }
-            </ul>
-        }
-    </article>
-</section>
+@functions {
+    private static int SemesterOrder(string semester) => semester switch
+    {
+        "Semester 1" => 1,
+        "Semester 2" => 2,
+        "Both" => 3,
+        _ => 99
+    };
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

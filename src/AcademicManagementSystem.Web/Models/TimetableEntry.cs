@@ -6,7 +6,7 @@ public sealed class TimetableEntry
 {
     public int Id { get; set; }
     public int CourseId { get; set; }
-    public int LecturerId { get; set; }
+    public int? LecturerId { get; set; }
     public int RoomId { get; set; }
     public string AcademicYear { get; set; } = "2026";
     public string Semester { get; set; } = "Semester 2";
@@ -16,7 +16,7 @@ public sealed class TimetableEntry
     public string Status { get; set; } = "Published";
 
     public Course Course { get; set; } = null!;
-    public Lecturer Lecturer { get; set; } = null!;
+    public Lecturer? Lecturer { get; set; }
     public Room Room { get; set; } = null!;
 
     [NotMapped]

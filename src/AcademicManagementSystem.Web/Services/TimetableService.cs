@@ -6,29 +6,40 @@ public sealed class TimetableService
 {
     public static readonly IReadOnlyList<TimetableSlot> StandardSlots =
     [
-        new("Monday", 540, 660),
-        new("Monday", 690, 810),
+        new("Monday", 480, 600),
+        new("Monday", 600, 720),
+        new("Monday", 720, 840),
         new("Monday", 840, 960),
-        new("Monday", 1020, 1140),
+        new("Monday", 960, 1080),
+        new("Monday", 1080, 1200),
 
-        new("Tuesday", 540, 660),
-        new("Tuesday", 690, 810),
+        new("Tuesday", 480, 600),
+        new("Tuesday", 600, 720),
+        new("Tuesday", 720, 840),
         new("Tuesday", 840, 960),
-        new("Tuesday", 1020, 1140),
+        new("Tuesday", 960, 1080),
+        new("Tuesday", 1080, 1200),
 
-        new("Wednesday", 540, 660),
-        new("Wednesday", 690, 810),
+        new("Wednesday", 480, 600),
+        new("Wednesday", 600, 720),
+        new("Wednesday", 720, 840),
         new("Wednesday", 840, 960),
-        new("Wednesday", 1020, 1140),
+        new("Wednesday", 960, 1080),
+        new("Wednesday", 1080, 1200),
 
-        new("Thursday", 540, 660),
-        new("Thursday", 690, 810),
+        new("Thursday", 480, 600),
+        new("Thursday", 600, 720),
+        new("Thursday", 720, 840),
         new("Thursday", 840, 960),
-        new("Thursday", 1020, 1140),
+        new("Thursday", 960, 1080),
+        new("Thursday", 1080, 1200),
 
-        new("Friday", 540, 660),
-        new("Friday", 690, 810),
-        new("Friday", 1020, 1140)
+        new("Friday", 480, 600),
+        new("Friday", 600, 720),
+        new("Friday", 720, 840),
+        new("Friday", 840, 960),
+        new("Friday", 960, 1080),
+        new("Friday", 1080, 1200)
     ];
 
     public TimetableValidationResult Validate(
@@ -66,15 +77,25 @@ public sealed class TimetableService
                 $"requires capacity for {requiredCapacity} student(s).");
         }
 
-        if (!candidate.Lecturer.IsAvailableOn(candidate.DayOfWeek))
+        if (candidate.Lecturer is { } lecturer && !lecturer.IsAvailableOn(candidate.DayOfWeek))
         {
-            errors.Add($"{candidate.Lecturer.FullName} is not available on {candidate.DayOfWeek}.");
+            errors.Add($"{lecturer.FullName} is not available on {candidate.DayOfWeek}.");
         }
 
         foreach (var entry in existingEntries.Where(entry =>
                      !ReferenceEquals(entry, candidate) &&
                      (candidate.Id == 0 || entry.Id != candidate.Id)))
         {
+            if (candidate.CourseId == entry.CourseId &&
+                candidate.DayOfWeek.Equals(
+                    entry.DayOfWeek,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add(
+                    $"{candidate.Course.Code} already has a weekly session on {candidate.DayOfWeek}. " +
+                    "Its sessions must be placed on different days.");
+            }
+
             if (!Overlaps(candidate, entry))
             {
                 continue;
@@ -87,28 +108,26 @@ public sealed class TimetableService
                     $"at {entry.ScheduleLabel}.");
             }
 
-            if (candidate.LecturerId == entry.LecturerId)
+            if (candidate.LecturerId.HasValue && candidate.LecturerId == entry.LecturerId)
             {
                 errors.Add(
-                    $"Lecturer conflict: {candidate.Lecturer.FullName} is already assigned to {entry.Course.Code} " +
+                    $"Lecturer conflict: {candidate.Lecturer?.FullName ?? "The assigned lecturer"} is already assigned to {entry.Course.Code} " +
                     $"at {entry.ScheduleLabel}.");
             }
 
             var conflict = AnalyseStudentConflicts(candidate, entry, registrations);
 
-            // Normal student conflicts are never allowed.
             if (conflict.NormalConflictCount > 0)
             {
                 errors.Add(
                     $"Normal student timetable conflict: {conflict.NormalConflictCount} registered student(s) " +
                     $"take both {candidate.Course.Code} and {entry.Course.Code}.");
             }
-
-            // Carry-course conflicts are not a hard error. They are shown
-            // later as Coordinator warnings and minimised by the generator.
         }
 
-        return new TimetableValidationResult(errors.Count == 0, errors.Distinct().ToList());
+        return new TimetableValidationResult(
+            errors.Count == 0,
+            errors.Distinct().ToList());
     }
 
     public IReadOnlyList<TimetableIssue> FindIssues(
@@ -146,11 +165,11 @@ public sealed class TimetableService
                     [entry.Id]));
             }
 
-            if (!entry.Lecturer.IsAvailableOn(entry.DayOfWeek))
+            if (entry.Lecturer is { } lecturer && !lecturer.IsAvailableOn(entry.DayOfWeek))
             {
                 issues.Add(new TimetableIssue(
                     "Availability",
-                    $"{entry.Lecturer.FullName} is unavailable on {entry.DayOfWeek} for {entry.Course.Code}.",
+                    $"{lecturer.FullName} is unavailable on {entry.DayOfWeek} for {entry.Course.Code}.",
                     [entry.Id]));
             }
         }
@@ -161,6 +180,18 @@ public sealed class TimetableService
             {
                 var first = entries.ElementAt(firstIndex);
                 var second = entries.ElementAt(secondIndex);
+
+                if (first.CourseId == second.CourseId &&
+                    first.DayOfWeek.Equals(
+                        second.DayOfWeek,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    issues.Add(new TimetableIssue(
+                        "Course session spacing",
+                        $"{first.Course.Code} has more than one weekly session on " +
+                        $"{first.DayOfWeek}. Sessions should be on different days.",
+                        [first.Id, second.Id]));
+                }
 
                 if (!Overlaps(first, second))
                 {
@@ -176,11 +207,11 @@ public sealed class TimetableService
                         [first.Id, second.Id]));
                 }
 
-                if (first.LecturerId == second.LecturerId)
+                if (first.LecturerId.HasValue && first.LecturerId == second.LecturerId)
                 {
                     issues.Add(new TimetableIssue(
                         "Lecturer conflict",
-                        $"{first.Lecturer.FullName} is double-booked for {first.Course.Code} and " +
+                        $"{first.Lecturer?.FullName ?? "The assigned lecturer"} is double-booked for {first.Course.Code} and " +
                         $"{second.Course.Code} at {first.ScheduleLabel}.",
                         [first.Id, second.Id]));
                 }
@@ -234,14 +265,107 @@ public sealed class TimetableService
         IReadOnlyCollection<CourseRegistration> registrations,
         AcademicSettings settings)
     {
+        return FindBestCandidate(
+            course,
+            lecturers,
+            rooms,
+            existingEntries,
+            registrations,
+            settings);
+    }
+
+    /// <summary>
+    /// Creates the requested number of sessions for one course. Every generated
+    /// session uses a different day, and all previously generated sessions are
+    /// considered when selecting the next one.
+    /// </summary>
+    public IReadOnlyList<TimetableEntry> SuggestEntries(
+        Course course,
+        IReadOnlyCollection<Lecturer> lecturers,
+        IReadOnlyCollection<Room> rooms,
+        IReadOnlyCollection<TimetableEntry> existingEntries,
+        IReadOnlyCollection<CourseRegistration> registrations,
+        AcademicSettings settings,
+        int sessionsToAdd)
+    {
+        if (sessionsToAdd <= 0)
+        {
+            return [];
+        }
+
+        var suggestions = new List<TimetableEntry>();
+        var workingEntries = existingEntries.ToList();
+        int? selectedLecturerId = null;
+
+        for (var sessionNumber = 1; sessionNumber <= sessionsToAdd; sessionNumber++)
+        {
+            var eligibleLecturers = selectedLecturerId.HasValue
+                ? lecturers
+                    .Where(lecturer => lecturer.Id == selectedLecturerId.Value)
+                    .ToList()
+                : lecturers;
+
+            var suggestion = FindBestCandidate(
+                course,
+                eligibleLecturers,
+                rooms,
+                workingEntries,
+                registrations,
+                settings);
+
+            // Do not create a partial timetable for a course. The coordinator
+            // must either receive all required sessions or none.
+            if (suggestion is null)
+            {
+                return [];
+            }
+
+            selectedLecturerId ??= suggestion.LecturerId;
+
+            suggestions.Add(suggestion);
+            workingEntries.Add(suggestion);
+        }
+
+        return suggestions;
+    }
+
+    public static bool IsEveningSlot(TimetableSlot slot) => slot.StartMinutes >= 1080;
+
+    public static bool IsEveningCourse(Course course) =>
+        course.StudyMode?.Name.Equals("Evening", StringComparison.OrdinalIgnoreCase) == true;
+
+    public static bool IsSlotCompatibleWithCourse(Course course, TimetableSlot slot) =>
+        IsEveningCourse(course) == IsEveningSlot(slot);
+
+    private static TimetableEntry? FindBestCandidate(
+        Course course,
+        IEnumerable<Lecturer> lecturers,
+        IReadOnlyCollection<Room> rooms,
+        IReadOnlyCollection<TimetableEntry> existingEntries,
+        IReadOnlyCollection<CourseRegistration> registrations,
+        AcademicSettings settings)
+    {
         TimetableEntry? bestCandidate = null;
         var bestScore = int.MaxValue;
+        var lecturerChoices = lecturers.Where(lecturer => lecturer.IsActive)
+            .Cast<Lecturer?>().DefaultIfEmpty().ToList();
 
-        foreach (var slot in StandardSlots.Where(slot => IsSlotCompatibleWithCourse(course, slot)))
+        foreach (var slot in StandardSlots
+                     .Where(slot => IsSlotCompatibleWithCourse(course, slot)))
         {
-            foreach (var lecturer in lecturers.Where(lecturer =>
-                         lecturer.IsActive &&
-                         lecturer.IsAvailableOn(slot.DayOfWeek)))
+            // A course can have two sessions per week, but not two sessions
+            // on the same weekday.
+            if (existingEntries.Any(entry =>
+                    entry.CourseId == course.Id &&
+                    entry.DayOfWeek.Equals(
+                        slot.DayOfWeek,
+                        StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            foreach (var lecturer in lecturerChoices.Where(lecturer =>
+                         lecturer?.IsAvailableOn(slot.DayOfWeek) != false))
             {
                 foreach (var room in rooms
                              .Where(room =>
@@ -256,7 +380,7 @@ public sealed class TimetableService
                     {
                         CourseId = course.Id,
                         Course = course,
-                        LecturerId = lecturer.Id,
+                        LecturerId = lecturer?.Id,
                         Lecturer = lecturer,
                         RoomId = room.Id,
                         Room = room,
@@ -268,7 +392,10 @@ public sealed class TimetableService
                         Status = "Draft"
                     };
 
-                    if (!PassesHardConstraints(candidate, existingEntries, registrations))
+                    if (!PassesHardConstraints(
+                            candidate,
+                            existingEntries,
+                            registrations))
                     {
                         continue;
                     }
@@ -283,7 +410,6 @@ public sealed class TimetableService
                         bestCandidate = candidate;
                         bestScore = score;
 
-                        // A perfect candidate has no carry-course clash.
                         if (score == 0)
                         {
                             return bestCandidate;
@@ -294,24 +420,6 @@ public sealed class TimetableService
         }
 
         return bestCandidate;
-    }
-
-    public static bool IsSlotCompatibleWithCourse(Course course, TimetableSlot slot)
-    {
-        if (course.StudyMode is null)
-        {
-            return true;
-        }
-
-        var isEveningCourse = course.StudyMode.Name.Equals(
-            "Evening",
-            StringComparison.OrdinalIgnoreCase);
-
-        var isEveningSlot = slot.StartMinutes >= 1020;
-
-        return isEveningCourse
-            ? isEveningSlot
-            : !isEveningSlot;
     }
 
     private static bool PassesHardConstraints(
@@ -330,18 +438,30 @@ public sealed class TimetableService
                 candidate.CourseId,
                 candidate.Course.ExpectedEnrollment,
                 registrations) ||
-            !candidate.Lecturer.IsAvailableOn(candidate.DayOfWeek))
+            candidate.Lecturer?.IsAvailableOn(candidate.DayOfWeek) == false)
         {
             return false;
         }
 
         foreach (var entry in existingEntries.Where(entry =>
                      !ReferenceEquals(entry, candidate) &&
-                     (candidate.Id == 0 || entry.Id != candidate.Id) &&
-                     Overlaps(candidate, entry)))
+                     (candidate.Id == 0 || entry.Id != candidate.Id)))
         {
+            if (entry.CourseId == candidate.CourseId &&
+                entry.DayOfWeek.Equals(
+                    candidate.DayOfWeek,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!Overlaps(candidate, entry))
+            {
+                continue;
+            }
+
             if (entry.RoomId == candidate.RoomId ||
-                entry.LecturerId == candidate.LecturerId)
+                (candidate.LecturerId.HasValue && entry.LecturerId == candidate.LecturerId))
             {
                 return false;
             }
@@ -364,7 +484,8 @@ public sealed class TimetableService
     {
         var carryConflicts = 0;
 
-        foreach (var entry in existingEntries.Where(entry => Overlaps(candidate, entry)))
+        foreach (var entry in existingEntries.Where(entry =>
+                     Overlaps(candidate, entry)))
         {
             var conflict = AnalyseStudentConflicts(candidate, entry, registrations);
 
@@ -417,13 +538,16 @@ public sealed class TimetableService
 
         foreach (var firstRegistration in firstRegistrations)
         {
-            if (!secondByStudent.TryGetValue(firstRegistration.StudentId, out var matching))
+            if (!secondByStudent.TryGetValue(
+                    firstRegistration.StudentId,
+                    out var matching))
             {
                 continue;
             }
 
             if (firstRegistration.RegistrationType == "Carry" ||
-                matching.Any(registration => registration.RegistrationType == "Carry"))
+                matching.Any(registration =>
+                    registration.RegistrationType == "Carry"))
             {
                 carry++;
             }
@@ -437,7 +561,9 @@ public sealed class TimetableService
     }
 
     public static bool Overlaps(TimetableEntry first, TimetableEntry second) =>
-        first.DayOfWeek.Equals(second.DayOfWeek, StringComparison.OrdinalIgnoreCase) &&
+        first.DayOfWeek.Equals(
+            second.DayOfWeek,
+            StringComparison.OrdinalIgnoreCase) &&
         first.StartMinutes < second.EndMinutes &&
         second.StartMinutes < first.EndMinutes;
 }
@@ -446,7 +572,8 @@ public sealed record TimetableSlot(string DayOfWeek, int StartMinutes, int EndMi
 {
     public string Value => $"{DayOfWeek}|{StartMinutes}|{EndMinutes}";
 
-    public string Label => $"{DayOfWeek} {FormatTime(StartMinutes)}–{FormatTime(EndMinutes)}";
+    public string Label =>
+        $"{DayOfWeek} {FormatTime(StartMinutes)}–{FormatTime(EndMinutes)}";
 
     private static string FormatTime(int minutes) =>
         new TimeOnly(minutes / 60, minutes % 60).ToString("HH:mm");

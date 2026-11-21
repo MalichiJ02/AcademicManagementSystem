@@ -78,7 +78,6 @@
     <article class="card-surface">
         <div class="card-heading">
             <div>
-                <p class="section-kicker">Early warning</p>
                 <h2>Students needing review</h2>
             </div>
             <a class="text-link" asp-page="/Coordinator/Monitoring">Open monitoring</a>
@@ -104,7 +103,6 @@
     <article class="card-surface">
         <div class="card-heading">
             <div>
-                <p class="section-kicker">Timetable health</p>
                 <h2>@(Model.TimetableIssues.Count == 0 ? "No conflicts detected" : $"{Model.TimetableIssues.Count} issue(s) detected")</h2>
             </div>
             <a class="text-link" asp-page="/Coordinator/Timetable">Review timetable</a>

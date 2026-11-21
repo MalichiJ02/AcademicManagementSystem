@@ -1,73 +1,132 @@
 @page
+@using AcademicManagementSystem.Web.Services
 @model AcademicManagementSystem.Web.Pages.Coordinator.TimetableModel
 @{
-    ViewData["Title"] = "Timetable optimizer";
+    ViewData["Title"] = "Timetable";
+    var weekdays = Model.Slots.Select(slot => slot.DayOfWeek)
+        .Concat(Model.Entries.Select(entry => entry.DayOfWeek)).Distinct().ToList();
+    var periods = Model.Slots.Select(slot => (slot.StartMinutes, slot.EndMinutes))
+        .Concat(Model.Entries.Select(entry => (entry.StartMinutes, entry.EndMinutes)))
+        .Distinct().OrderBy(period => period.StartMinutes).ThenBy(period => period.EndMinutes);
+    var entriesByPeriod = Model.Entries.ToLookup(entry => (entry.DayOfWeek, entry.StartMinutes, entry.EndMinutes));
+    var bookedRooms = Model.Entries.Select(entry => entry.Room).DistinctBy(room => room.Id).OrderBy(room => room.Code);
+    var programmes = Model.Entries.Select(entry => entry.Course.Programme)
+        .OfType<AcademicManagementSystem.Web.Models.Programme>()
+        .DistinctBy(programme => programme.Id).OrderBy(programme => programme.Code);
+    var years = Model.Entries.Select(entry => entry.Course.YearLevel).Distinct().OrderBy(year => year);
+    var hasUnassignedProgramme = Model.Entries.Any(entry => entry.Course.Programme is null);
+    var pendingCount = Model.Entries.Count(entry => entry.LecturerId is null);
+    var draftCount = Model.Entries.Count(entry => entry.Status.Equals("Draft", StringComparison.OrdinalIgnoreCase));
 }
 
-<section class="page-heading">
+<header class="page-heading timetable-heading">
     <div>
-        <p class="eyebrow">Coordinator workspace</p>
-        <h1>Timetable optimizer</h1>
-        <p>
-            The system generates draft allocations using assigned lecturers,
-            available rooms, capacity, study mode, and student-conflict checks.
-            Review drafts before publishing the timetable.
-        </p>
+        <p class="term-label">@Model.Settings.AcademicYear / @Model.Settings.Semester</p>
+        <h1>Timetable</h1>
+        <p>@Model.Entries.Count sessions · @draftCount drafts · @pendingCount awaiting a lecturer</p>
     </div>
-    <a class="btn btn-outline-primary" asp-page="/Coordinator/Index">
-        Back to coordinator workspace
-    </a>
-</section>
+    @if (Model.Issues.Count > 0)
+    {
+        <a href="#timetable-conflicts">@Model.Issues.Count conflicts to review</a>
+    }
+</header>
 
-@if (TempData["Success"] is string successMessage)
+@if (Model.Entries.Count > 0)
 {
-    <div class="alert alert-success" role="alert">@successMessage</div>
+    <section class="week-board" aria-labelledby="week-title">
+        <div class="week-toolbar">
+            <h2 id="week-title">Teaching week</h2>
+            <div class="week-filters">
+                <label>Programme
+                    <select id="weekProgramme" class="form-select">
+                        <option value="">All programmes</option>
+                        @foreach (var programme in programmes)
+                        {
+                            <option value="@programme.Id">@programme.Code</option>
+                        }
+                        @if (hasUnassignedProgramme)
+                        {
+                            <option value="unassigned">Unassigned programme</option>
+                        }
+                    </select>
+                </label>
+                <label>Year
+                    <select id="weekYear" class="form-select">
+                        <option value="">All years</option>
+                        @foreach (var year in years)
+                        {
+                            <option value="@year">Year @year</option>
+                        }
+                    </select>
+                </label>
+                <label>Course
+                    <input type="search" id="weekCourse" class="form-control" placeholder="Code or title" />
+                </label>
+                <label>Room
+                    <select id="weekRoom" class="form-select">
+                        <option value="">All rooms</option>
+                        @foreach (var room in bookedRooms)
+                        {
+                            <option value="@room.Id">@room.Code</option>
+                        }
+                    </select>
+                </label>
+            </div>
+        </div>
+        <div class="week-scroll" tabindex="0" aria-label="Weekly timetable, scroll for more">
+            <table class="week-grid">
+                <thead>
+                    <tr>
+                        <th scope="col">Time</th>
+                        @foreach (var day in weekdays)
+                        {
+                            <th scope="col">@day</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var period in periods)
+                    {
+                        var start = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(period.StartMinutes));
+                        var end = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(period.EndMinutes));
+                        <tr>
+                            <th scope="row">@start.ToString("HH:mm")–@end.ToString("HH:mm")</th>
+                            @foreach (var day in weekdays)
+                            {
+                                <td>
+                                    @foreach (var entry in entriesByPeriod[(day, period.StartMinutes, period.EndMinutes)])
+                                    {
+                                        <a class="week-session" href="#session-@entry.Id"
+                                           data-course="@entry.Course.Code @entry.Course.Title" data-room="@entry.RoomId" data-status="@entry.Status"
+                                           data-programme="@(entry.Course.Programme?.Id.ToString() ?? "unassigned")"
+                                           data-year="@entry.Course.YearLevel">
+                                            <strong>@entry.Course.Code</strong>
+                                            <span>@entry.Room.Code · @entry.Status</span>
+                                            @if (entry.LecturerId is null)
+                                            {
+                                                <small>Lecturer pending</small>
+                                            }
+                                        </a>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p id="weekEmpty" class="week-empty" role="status" hidden>No sessions match these filters.</p>
+    </section>
 }
-
-@if (TempData["Error"] is string errorMessage)
-{
-    <div class="alert alert-danger" role="alert">@errorMessage</div>
-}
-
-<section class="summary-metric-grid">
-    <article class="metric-card">
-        <span>Total allocations</span>
-        <strong>@Model.Entries.Count</strong>
-    </article>
-
-    <article class="metric-card">
-        <span>Courses awaiting allocation</span>
-        <strong>@Model.AwaitingCourses.Count</strong>
-    </article>
-
-    <article class="metric-card">
-        <span>Constraint checks</span>
-        <strong>@(Model.Issues.Count == 0 ? "Pass" : $"{Model.Issues.Count} issue(s)")</strong>
-    </article>
-</section>
 
 @if (Model.AwaitingCourses.Count > 0)
 {
     <section class="card-surface decision-card">
-        <div class="card-heading">
-            <div>
-                <p class="section-kicker">Automatic timetable generation</p>
-                <h2>Generate draft allocations</h2>
-            </div>
-            <span class="status-pill status-info">Coordinator review required</span>
-        </div>
-
-        <p class="muted-copy">
-            The generator considers only lecturers formally assigned to each course.
-            It prevents room, lecturer, capacity, and normal student conflicts.
-            Carry-course conflicts are minimised after these main constraints.
-        </p>
-
-        <p>
-            <strong>Awaiting:</strong>
-            @string.Join(", ", Model.AwaitingCourses.Select(course => course.Code))
-        </p>
-
+        <h2>Unscheduled courses (@Model.AwaitingCourses.Count)</h2>
+        <details class="awaiting-list">
+            <summary>Course codes</summary>
+            <p>@string.Join(", ", Model.AwaitingCourses.Select(course => course.Code))</p>
+        </details>
         <form method="post" asp-page-handler="Generate">
             <button class="btn btn-primary" type="submit">
                 Generate draft timetable
@@ -76,25 +135,14 @@
     </section>
 
     <section class="card-surface registration-summary">
-        <div class="card-heading">
-            <div>
-                <p class="section-kicker">Manual draft allocation</p>
-                <h2>Choose a timetable entry manually</h2>
-            </div>
-        </div>
-
-        <p class="muted-copy">
-            Select a course first. The lecturer list will show only lecturers
-            formally assigned to that course.
-        </p>
-
+        <h2>Add a session</h2>
         <form method="post" asp-page-handler="Add" class="coordinator-form timetable-form">
             <div>
                 <label asp-for="CourseId">Course</label>
                 <select asp-for="CourseId" class="form-select" id="CourseId">
                     @foreach (var course in Model.AwaitingCourses)
                     {
-                        <option value="@course.Id">
+                        <option value="@course.Id" data-evening="@(TimetableService.IsEveningCourse(course) ? "yes" : "no")">
                             @course.Code — @course.Title
                             (@course.ExpectedEnrollment expected@(course.StudyMode is null ? "" : $", {course.StudyMode.Name}"))
                         </option>
@@ -103,8 +151,9 @@
             </div>
 
             <div>
-                <label asp-for="LecturerId">Assigned lecturer</label>
+                <label asp-for="LecturerId">Lecturer (optional)</label>
                 <select asp-for="LecturerId" class="form-select" id="LecturerId">
+                    <option value="">Lecturer pending</option>
                     @foreach (var lecturer in Model.Lecturers)
                     {
                         var assignedCourseIds = Model.CourseLecturerAssignments
@@ -118,10 +167,6 @@
                     }
                 </select>
 
-                <small class="text-danger d-none" id="noAssignedLecturer">
-                    No lecturer has been assigned to this course. Go to
-                    Course–Lecturer Assignments first.
-                </small>
             </div>
 
             <div>
@@ -138,15 +183,15 @@
 
             <div>
                 <label asp-for="SlotValue">Teaching period</label>
-                <select asp-for="SlotValue" class="form-select">
+                <select asp-for="SlotValue" class="form-select" id="SlotValue">
                     @foreach (var slot in Model.Slots)
                     {
-                        <option value="@slot.Value">@slot.Label</option>
+                        <option value="@slot.Value" data-evening="@(TimetableService.IsEveningSlot(slot) ? "yes" : "no")">@slot.Label</option>
                     }
                 </select>
             </div>
 
-            <button class="btn btn-primary" type="submit" id="createDraftButton">
+            <button class="btn btn-primary" type="submit">
                 Validate and create draft
             </button>
         </form>
@@ -156,8 +201,7 @@
 <section class="card-surface registration-summary">
     <div class="card-heading">
         <div>
-            <p class="section-kicker">Timetable review</p>
-            <h2>@Model.Settings.Semester · @Model.Settings.AcademicYear</h2>
+            <h2>Manage sessions</h2>
         </div>
 
         <span class="status-pill @(Model.Issues.Count == 0 ? "status-success" : "status-danger")">
@@ -165,7 +209,7 @@
         </span>
     </div>
 
-    @if (Model.Entries.Any(entry => entry.Status == "Draft"))
+    @if (draftCount > 0)
     {
         <div class="alert alert-warning">
             Draft allocations are not visible as an official timetable until you publish them.
@@ -176,13 +220,21 @@
                 Publish approved draft timetable
             </button>
         </form>
+
+        <form method="post" asp-page-handler="DeleteAllDrafts" class="mb-3"
+              id="deleteAllDraftsForm" data-draft-count="@draftCount">
+            <input type="hidden" name="academicYear" value="@Model.Settings.AcademicYear" />
+            <input type="hidden" name="semester" value="@Model.Settings.Semester" />
+            <button class="btn btn-outline-danger" type="submit">
+                Delete all drafts (@draftCount)
+            </button>
+        </form>
     }
 
     @if (Model.Entries.Count == 0)
     {
         <p class="muted-copy">
-            No allocations exist yet. Generate a draft timetable after adding courses,
-            rooms, lecturers, and course–lecturer assignments.
+            No allocations exist yet. Add courses and rooms to generate a draft timetable.
         </p>
     }
     else
@@ -203,13 +255,38 @@
                 <tbody>
                     @foreach (var entry in Model.Entries)
                     {
-                        <tr>
+                        <tr id="session-@entry.Id">
                             <td><strong>@entry.ScheduleLabel</strong></td>
                             <td>
                                 <strong>@entry.Course.Code</strong><br />
                                 <span class="muted-copy">@entry.Course.Title</span>
                             </td>
-                            <td>@entry.Lecturer.FullName</td>
+                            <td>
+                                @(entry.Lecturer?.FullName ?? "Lecturer pending")
+                                @if (entry.LecturerId is null)
+                                {
+                                    var eligibleLecturers = Model.EligibleLecturersFor(entry.CourseId);
+                                    if (eligibleLecturers.Count > 0)
+                                    {
+                                        <form method="post" asp-page-handler="AssignLecturer" class="mt-2">
+                                            <input type="hidden" name="EntryId" value="@entry.Id" />
+                                            <select name="assignedLecturerId" class="form-select form-select-sm"
+                                                    aria-label="Lecturer for @entry.Course.Code @entry.ScheduleLabel" required>
+                                                <option value="">Choose a lecturer</option>
+                                                @foreach (var lecturer in eligibleLecturers)
+                                                {
+                                                    <option value="@lecturer.Id">@lecturer.FullName</option>
+                                                }
+                                            </select>
+                                            <button class="btn btn-sm btn-outline-primary mt-1" type="submit">Assign lecturer</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <div class="muted-copy">Add an eligible lecturer under Course–Lecturer Assignments.</div>
+                                    }
+                                }
+                            </td>
                             <td>@entry.Room.Code</td>
                             <td>@entry.Course.ExpectedEnrollment / @entry.Room.Capacity</td>
                             <td>
@@ -240,11 +317,10 @@
     }
 </section>
 
-<section class="card-surface registration-summary">
+<section class="card-surface registration-summary" id="timetable-conflicts">
     <div class="card-heading">
         <div>
-            <p class="section-kicker">Constraint report</p>
-            <h2>Timetable health check</h2>
+            <h2>Timetable conflicts</h2>
         </div>
     </div>
 
@@ -270,10 +346,43 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
+        const deleteAllDraftsForm = document.getElementById("deleteAllDraftsForm");
+        deleteAllDraftsForm?.addEventListener("submit", event => {
+            const count = deleteAllDraftsForm.dataset.draftCount;
+            if (!window.confirm(`Delete all ${count} draft sessions you can manage in this term?`)) {
+                event.preventDefault();
+            }
+        });
+
+        const weekCourse = document.getElementById("weekCourse");
+        const weekRoom = document.getElementById("weekRoom");
+        const weekProgramme = document.getElementById("weekProgramme");
+        const weekYear = document.getElementById("weekYear");
+        if (weekCourse && weekRoom && weekProgramme && weekYear) {
+            const sessions = document.querySelectorAll(".week-session");
+            const emptyMessage = document.getElementById("weekEmpty");
+            const filterWeek = () => {
+                const query = weekCourse.value.trim().toLocaleLowerCase();
+                let hasMatch = false;
+                for (const session of sessions) {
+                    const courseMatches = session.dataset.course.toLocaleLowerCase().includes(query);
+                    const roomMatches = !weekRoom.value || weekRoom.value === session.dataset.room;
+                    const programmeMatches = !weekProgramme.value || weekProgramme.value === session.dataset.programme;
+                    const yearMatches = !weekYear.value || weekYear.value === session.dataset.year;
+                    session.hidden = !(courseMatches && roomMatches && programmeMatches && yearMatches);
+                    hasMatch ||= !session.hidden;
+                }
+                emptyMessage.hidden = hasMatch;
+            };
+            weekCourse.addEventListener("input", filterWeek);
+            weekRoom.addEventListener("change", filterWeek);
+            weekProgramme.addEventListener("change", filterWeek);
+            weekYear.addEventListener("change", filterWeek);
+            filterWeek();
+        }
+
         const courseSelect = document.getElementById("CourseId");
         const lecturerSelect = document.getElementById("LecturerId");
-        const noAssignedLecturer = document.getElementById("noAssignedLecturer");
-        const createDraftButton = document.getElementById("createDraftButton");
 
         function filterLecturersForCourse() {
             if (!courseSelect || !lecturerSelect) {
@@ -281,28 +390,44 @@
             }
 
             const selectedCourseId = courseSelect.value;
-            let matchingLecturerFound = false;
+            for (const option of lecturerSelect.options) {
+                const eligible = option.value === "" ||
+                    (option.dataset.courseIds || "").split(",").includes(selectedCourseId);
+                option.hidden = !eligible;
+                option.disabled = !eligible;
+            }
 
-            Array.from(lecturerSelect.options).forEach(option => {
-                const courseIds = (option.dataset.courseIds || "").split(",");
-                const isAssigned = courseIds.includes(selectedCourseId);
+            if (lecturerSelect.selectedOptions[0]?.disabled) {
+                lecturerSelect.value = "";
+            }
+        }
 
-                option.hidden = !isAssigned;
-                option.disabled = !isAssigned;
+        const slotSelect = document.getElementById("SlotValue");
 
-                if (isAssigned && !matchingLecturerFound) {
-                    lecturerSelect.value = option.value;
-                    matchingLecturerFound = true;
-                }
-            });
+        function filterPeriodsForCourse() {
+            const course = courseSelect.selectedOptions[0];
+            if (!course || !slotSelect) {
+                return;
+            }
 
-            noAssignedLecturer.classList.toggle("d-none", matchingLecturerFound);
-            createDraftButton.disabled = !matchingLecturerFound;
+            for (const option of slotSelect.options) {
+                const eligible = option.dataset.evening === course.dataset.evening;
+                option.hidden = !eligible;
+                option.disabled = !eligible;
+            }
+
+            if (!slotSelect.selectedOptions[0] || slotSelect.selectedOptions[0].disabled) {
+                slotSelect.selectedIndex = Array.from(slotSelect.options).findIndex(option => !option.disabled);
+            }
         }
 
         if (courseSelect) {
-            courseSelect.addEventListener("change", filterLecturersForCourse);
-            filterLecturersForCourse();
+            const updateCourseOptions = () => {
+                filterLecturersForCourse();
+                filterPeriodsForCourse();
+            };
+            courseSelect.addEventListener("change", updateCourseOptions);
+            updateCourseOptions();
         }
     </script>
 }

@@ -1,4 +1,0 @@
-"Name","Description","MaximumCourses","AdditionalFee","PaymentAccountName","PaymentAccountReference","IsActive"
-"Full-time","Weekday daytime study","4","0","Prototype Full-time Account","FULL-TIME-PROTOTYPE","true"
-"Part-time","Reduced course load for working students","2","1000","Prototype Part-time Account","PART-TIME-PROTOTYPE","true"
-"Evening","Late-afternoon and evening study","4","500","Prototype Evening Account","EVENING-PROTOTYPE","true"

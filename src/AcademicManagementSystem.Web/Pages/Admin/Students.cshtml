@@ -2,15 +2,24 @@
 @model AcademicManagementSystem.Web.Pages.Admin.StudentsModel
 @{
     ViewData["Title"] = "Students";
+    var programmes = Model.Students
+        .GroupBy(student => new
+        {
+            Code = student.ProgrammeRecord?.Code,
+            Name = student.ProgrammeRecord?.Name ??
+                (string.IsNullOrWhiteSpace(student.Programme) ? "Unassigned" : student.Programme)
+        })
+        .OrderBy(group => group.Key.Name)
+        .ThenBy(group => group.Key.Code);
 }
 
-<section class="page-heading">
+<header class="page-heading">
     <div>
-        <p class="section-kicker">Administrator workspace</p>
-        <h1>Students and accounts</h1>
-        <p>Create each student record once, then give that student their own secure login.</p>
+        <h1>Students</h1>
+        <p>@Model.Students.Count student records</p>
     </div>
-</section>
+    <a class="btn btn-outline-primary" asp-page="/Admin/StudentImport">Import students</a>
+</header>
 
 @if (Model.EditId.HasValue)
 {
@@ -79,9 +88,8 @@
 }
 else
 {
-    <section class="card-surface form-card">
-        <p class="section-kicker">New student</p>
-        <h2>Create a student record and secure account</h2>
+    <details class="card-surface directory-panel student-add" open="@(ViewData.ModelState.ErrorCount > 0)">
+        <summary>Add student</summary>
         @if (Model.Programmes.Count == 0 || Model.StudyModes.Count == 0)
         {
             <p class="alert alert-warning mb-0">
@@ -142,60 +150,117 @@ else
                 </div>
             </form>
         }
-    </section>
+    </details>
 }
 
-<section class="card-surface">
-    <div class="card-heading">
-        <div>
-            <p class="section-kicker">Student records</p>
-            <h2>@Model.Students.Count student(s)</h2>
-        </div>
-    </div>
+<section class="card-surface directory-panel student-directory">
+    <h2>Student directory</h2>
     @if (Model.Students.Count == 0)
     {
         <p class="muted-copy">No student records exist yet.</p>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Programme / mode</th>
-                        <th>Year</th>
-                        <th>Academic status</th>
-                        <th>Account</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var student in Model.Students)
+        <label class="form-label" for="studentSearch">Find a student</label>
+        <input class="form-control student-search" id="studentSearch" type="search"
+               placeholder="Name or student number" />
+        @foreach (var programmeGroup in programmes)
+        {
+            <details class="academic-programme student-programme">
+                <summary>
+                    @if (!string.IsNullOrEmpty(programmeGroup.Key.Code))
                     {
-                        <tr>
-                            <td><strong>@student.StudentNumber</strong><br /><span class="muted-copy">@student.FullName</span></td>
-                            <td>@student.Programme<br /><span class="muted-copy">@student.StudyMode</span></td>
-                            <td>@student.YearOfStudy</td>
-                            <td>
-                                <span class="status-pill @(student.IsAcademicallyEligible ? "status-success" : "status-danger")">
-                                    @(student.IsAcademicallyEligible ? "Eligible" : "Hold")
-                                </span>
-                            </td>
-                            <td>
-                                <span class="status-pill @(student.IsActive ? "status-success" : "status-muted")">
-                                    @(student.IsActive ? "Active" : "Disabled")
-                                </span>
-                            </td>
-                            <td><a class="btn btn-sm btn-outline-primary" asp-page="/Admin/Students" asp-route-editId="@student.Id">Manage</a></td>
-                        </tr>
+                        <strong>@programmeGroup.Key.Code</strong>
                     }
-                </tbody>
-            </table>
-        </div>
+                    @programmeGroup.Key.Name
+                    <span>@programmeGroup.Count() students</span>
+                </summary>
+                @foreach (var yearGroup in programmeGroup.GroupBy(student => student.YearOfStudy).OrderBy(group => group.Key))
+                {
+                    <details class="student-year">
+                        <summary>Year @yearGroup.Key <span>@yearGroup.Count() students</span></summary>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle directory-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Study mode</th>
+                                        <th>Academic status</th>
+                                        <th>Account</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var student in yearGroup)
+                                    {
+                                        <tr data-student="@student.StudentNumber @student.FullName">
+                                            <td><strong>@student.StudentNumber</strong><br /><span class="muted-copy">@student.FullName</span></td>
+                                            <td>@(student.StudyModeRecord?.Name ?? student.StudyMode)</td>
+                                            <td>
+                                                <span class="status-pill @(student.IsAcademicallyEligible ? "status-success" : "status-danger")">
+                                                    @(student.IsAcademicallyEligible ? "Eligible" : "Hold")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="status-pill @(student.IsActive ? "status-success" : "status-muted")">
+                                                    @(student.IsActive ? "Active" : "Disabled")
+                                                </span>
+                                            </td>
+                                            <td><a class="btn btn-sm btn-outline-primary" asp-page="/Admin/Students" asp-route-editId="@student.Id">Manage</a></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                }
+            </details>
+        }
+        <p id="studentSearchEmpty" role="status" hidden>No students match your search.</p>
     }
 </section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const search = document.getElementById("studentSearch");
+        if (search) {
+            const groups = document.querySelectorAll(".student-programme");
+            const expanders = document.querySelectorAll(".student-programme, .student-year");
+            const empty = document.getElementById("studentSearchEmpty");
+            let savedOpenStates = null;
+
+            search.addEventListener("input", () => {
+                const query = search.value.trim().toLocaleLowerCase();
+                if (query && !savedOpenStates) {
+                    savedOpenStates = Array.from(expanders, group => group.open);
+                }
+
+                let found = false;
+                for (const programme of groups) {
+                    let programmeMatch = false;
+                    for (const year of programme.querySelectorAll(".student-year")) {
+                        let yearMatch = false;
+                        for (const row of year.querySelectorAll("[data-student]")) {
+                            const matches = row.dataset.student.toLocaleLowerCase().includes(query);
+                            row.hidden = !matches;
+                            yearMatch ||= matches;
+                        }
+                        year.hidden = !yearMatch;
+                        if (query) year.open = yearMatch;
+                        programmeMatch ||= yearMatch;
+                    }
+                    programme.hidden = !programmeMatch;
+                    if (query) programme.open = programmeMatch;
+                    found ||= programmeMatch;
+                }
+
+                if (!query && savedOpenStates) {
+                    expanders.forEach((group, index) => group.open = savedOpenStates[index]);
+                    savedOpenStates = null;
+                }
+                empty.hidden = found;
+            });
+        }
+    </script>
 }

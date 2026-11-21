@@ -4,8 +4,6 @@ namespace AcademicManagementSystem.Web.Services;
 
 public sealed class RegistrationService(AcademicProgressionService progressionService)
 {
-    // Preserves the original prototype contract for any legacy page while new
-    // student pages pass the administrator's actual settings explicitly.
     public RegistrationValidationResult Validate(
         Student student,
         IReadOnlyCollection<Course> selectedCourses,
@@ -26,23 +24,32 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
         IReadOnlyCollection<TimetableEntry> timetableEntries)
     {
         var errors = new List<string>();
+
         var passedCourseCodes = student.CompletedCourses
             .Where(course => course.IsPassed)
             .Select(course => course.CourseCode)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var failedCourseCodes = student.CompletedCourses
             .Where(course => !course.IsPassed)
             .Select(course => course.CourseCode)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var progression = progressionService.Assess(student, settings);
+
         var timetableByCourseId = timetableEntries
             .GroupBy(entry => entry.CourseId)
-            .ToDictionary(group => group.Key, group => group.OrderBy(entry => entry.Id).First());
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(entry => entry.Id).First());
 
         var maximumCourses = settings.MaximumTotalCourses;
+
         if (student.StudyModeRecord is { MaximumCourses: > 0 })
         {
-            maximumCourses = Math.Min(maximumCourses, student.StudyModeRecord.MaximumCourses);
+            maximumCourses = Math.Min(
+                maximumCourses,
+                student.StudyModeRecord.MaximumCourses);
         }
 
         foreach (var course in selectedCourses)
@@ -73,13 +80,16 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
 
             if (course.YearLevel > student.YearOfStudy)
             {
-                errors.Add($"{course.Code} is not available for the student's current year of study.");
+                errors.Add(
+                    $"{course.Code} is not available for the student's current year of study.");
             }
 
             var isCarry = failedCourseCodes.Contains(course.Code);
+
             if (course.YearLevel < student.YearOfStudy && !isCarry)
             {
-                errors.Add($"{course.Code} can only be selected as an outstanding carry course.");
+                errors.Add(
+                    $"{course.Code} can only be selected as an outstanding carry course.");
             }
 
             if (passedCourseCodes.Contains(course.Code))
@@ -99,15 +109,14 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
             {
                 if (!passedCourseCodes.Contains(prerequisiteCode))
                 {
-                    errors.Add($"{course.Code} requires a passed {prerequisiteCode} prerequisite.");
+                    errors.Add(
+                        $"{course.Code} requires a passed {prerequisiteCode} prerequisite.");
                 }
             }
 
-            if (!timetableByCourseId.ContainsKey(course.Id))
-            {
-                errors.Add($"{course.Code} has no published timetable entry yet.");
-            }
-
+            // A course may be registered before its timetable is published.
+            // If a timetable entry already exists, it is still checked below
+            // for clashes with the student's other selected courses.
             if (progression.IsRestricted && !isCarry)
             {
                 errors.Add(
@@ -116,9 +125,11 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
         }
 
         var duplicates = selectedCourses
-            .Where(course => existingRegistrations.Any(registration => registration.CourseId == course.Id))
+            .Where(course => existingRegistrations.Any(
+                registration => registration.CourseId == course.Id))
             .Select(course => course.Code)
             .ToList();
+
         if (duplicates.Count > 0)
         {
             errors.Add($"Already registered: {string.Join(", ", duplicates)}.");
@@ -127,7 +138,9 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
         var confirmedExisting = existingRegistrations
             .Where(registration => registration.Status == "Confirmed")
             .ToList();
+
         var totalCourseCount = confirmedExisting.Count + selectedCourses.Count;
+
         if (totalCourseCount > maximumCourses)
         {
             errors.Add(
@@ -138,22 +151,33 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
         var carryCourseCount = confirmedExisting
             .Count(registration => registration.RegistrationType == "Carry") +
             selectedCourses.Count(course => failedCourseCodes.Contains(course.Code));
-        if (!progression.IsRestricted && carryCourseCount > settings.MaximumCarryCourses)
+
+        if (!progression.IsRestricted &&
+            carryCourseCount > settings.MaximumCarryCourses)
         {
             errors.Add(
                 $"Normal registration allows up to {settings.MaximumCarryCourses} carry course(s). " +
                 $"This selection would include {carryCourseCount}.");
         }
 
-        var existingCreditUnits = confirmedExisting.Sum(registration => registration.Course.CreditUnits);
-        var requestedCreditUnits = selectedCourses.Sum(course => course.CreditUnits);
+        var existingCreditUnits = confirmedExisting
+            .Sum(registration => registration.Course.CreditUnits);
 
+        var requestedCreditUnits = selectedCourses
+            .Sum(course => course.CreditUnits);
+
+        // Only courses which already have timetable entries participate in
+        // timetable-clash checking. Unscheduled courses remain registrable.
         var scheduledCourses = selectedCourses
             .Where(course => timetableByCourseId.ContainsKey(course.Id))
-            .Select(course => new ScheduledCourse(course, timetableByCourseId[course.Id]))
+            .Select(course => new ScheduledCourse(
+                course,
+                timetableByCourseId[course.Id]))
             .ToList();
+
         var existingScheduledCourses = confirmedExisting
-            .Where(registration => timetableByCourseId.ContainsKey(registration.CourseId))
+            .Where(registration =>
+                timetableByCourseId.ContainsKey(registration.CourseId))
             .Select(registration => new ScheduledCourse(
                 registration.Course,
                 timetableByCourseId[registration.CourseId]))
@@ -179,14 +203,17 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
             if (clashingExisting.Count > 0)
             {
                 errors.Add(
-                    $"Clash with existing registration: {selected.Course.Code} at {selected.Entry.ScheduleLabel} " +
-                    $"conflicts with {string.Join(", ", clashingExisting)}.");
+                    $"Clash with existing registration: {selected.Course.Code} at " +
+                    $"{selected.Entry.ScheduleLabel} conflicts with " +
+                    $"{string.Join(", ", clashingExisting)}.");
             }
         }
 
         var registrationTypes = selectedCourses.ToDictionary(
             course => course.Id,
-            course => failedCourseCodes.Contains(course.Code) ? "Carry" : "Normal");
+            course => failedCourseCodes.Contains(course.Code)
+                ? "Carry"
+                : "Normal");
 
         return new RegistrationValidationResult(
             errors.Count == 0,
@@ -212,14 +239,18 @@ public sealed class RegistrationService(AcademicProgressionService progressionSe
     {
         for (var firstIndex = 0; firstIndex < courses.Count; firstIndex++)
         {
-            for (var secondIndex = firstIndex + 1; secondIndex < courses.Count; secondIndex++)
+            for (var secondIndex = firstIndex + 1;
+                 secondIndex < courses.Count;
+                 secondIndex++)
             {
                 yield return (courses[firstIndex], courses[secondIndex]);
             }
         }
     }
 
-    private sealed record ScheduledCourse(Course Course, TimetableEntry Entry);
+    private sealed record ScheduledCourse(
+        Course Course,
+        TimetableEntry Entry);
 }
 
 public sealed record RegistrationValidationResult(

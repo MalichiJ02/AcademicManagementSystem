@@ -13,37 +13,195 @@
     <span class="status-pill status-info">@Model.Settings.AcademicYear · @Model.Settings.Semester</span>
 </section>
 
+<section class="card-surface form-card mb-3">
+    <h2>Enter marks by course</h2>
+    <form method="get" asp-page="./Results" class="form-grid mb-3">
+        <div>
+            <label for="bulkProgramme" class="form-label">Programme</label>
+            <select id="bulkProgramme" name="ProgrammeId" class="form-select" required>
+                <option value="">Choose programme</option>
+                @foreach (var programme in Model.Programmes)
+                {
+                    <option value="@programme.Id" selected="@(programme.Id == Model.ProgrammeId)">@programme.Code · @programme.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="bulkYear" class="form-label">Year of study</label>
+            <select id="bulkYear" name="YearOfStudy" class="form-select" required>
+                <option value="">Choose year</option>
+                @foreach (var year in Model.StudyYears)
+                {
+                    <option value="@year" selected="@(year == Model.YearOfStudy)">Year @year</option>
+                }
+            </select>
+        </div>
+        <div class="align-self-end"><button class="btn btn-outline-primary" type="submit">Load courses</button></div>
+    </form>
+
+    @if (Model.ProgrammeId.HasValue && Model.YearOfStudy.HasValue)
+    {
+        if (Model.BulkCourses.Count == 0)
+        {
+            <p>No courses with confirmed registrations for this group in the current term.</p>
+        }
+        else
+        {
+            <form method="get" asp-page="./Results" class="form-grid mb-3">
+                <input type="hidden" name="ProgrammeId" value="@Model.ProgrammeId" />
+                <input type="hidden" name="YearOfStudy" value="@Model.YearOfStudy" />
+                <div>
+                    <label for="bulkCourse" class="form-label">Course</label>
+                    <select id="bulkCourse" name="BulkCourseId" class="form-select" required>
+                        <option value="">Choose course</option>
+                        @foreach (var course in Model.BulkCourses)
+                        {
+                            <option value="@course.Id" selected="@(course.Id == Model.BulkCourseId)">@course.Code · @course.Title</option>
+                        }
+                    </select>
+                </div>
+                <div class="align-self-end"><button class="btn btn-outline-primary" type="submit">Load class list</button></div>
+            </form>
+        }
+    }
+
+    @if (Model.BulkRows.Count > 0)
+    {
+        <p>@Model.BulkRows.Count(row => row.Result?.IsPublished == false) draft ·
+            @Model.BulkRows.Count(row => row.Result is null) missing ·
+            @Model.BulkRows.Count(row => row.Result?.IsPublished == true) published</p>
+        <form method="post" asp-page-handler="BulkRecord">
+            <input type="hidden" name="ProgrammeId" value="@Model.ProgrammeId" />
+            <input type="hidden" name="YearOfStudy" value="@Model.YearOfStudy" />
+            <input type="hidden" name="BulkCourseId" value="@Model.BulkCourseId" />
+            <div class="table-responsive">
+                <table class="table align-middle directory-table">
+                    <thead><tr><th scope="col">Student</th><th scope="col">Mark (%)</th><th scope="col">Status</th></tr></thead>
+                    <tbody>
+                        @for (var i = 0; i < Model.BulkRows.Count; i++)
+                        {
+                            var row = Model.BulkRows[i];
+                            <tr>
+                                <td>@row.Student.StudentNumber · @row.Student.FullName</td>
+                                <td>
+                                    <input type="hidden" name="marks[@i].StudentId" value="@row.Student.Id" />
+                                    @if (row.Result?.IsPublished == true)
+                                    {
+                                        @row.Result.Mark
+                                    }
+                                    else
+                                    {
+                                        <input type="number" name="marks[@i].Mark" class="form-control"
+                                               value="@row.Result?.Mark.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                               min="0" max="100" step="0.01" aria-label="Mark for @row.Student.StudentNumber" />
+                                    }
+                                </td>
+                                <td>@(row.Result is null ? "Missing" : row.Result.IsPublished ? "Published" : "Draft")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn btn-primary mt-2" type="submit">Save draft marks</button>
+        </form>
+    }
+</section>
+
 <section class="card-surface form-card">
     <p class="section-kicker">Enter or correct a result</p>
     <h2>Unpublished result entry</h2>
-    <form method="post" asp-page-handler="Record" class="form-grid">
-        <div asp-validation-summary="ModelOnly" class="text-danger form-grid-full"></div>
+    <form method="get" asp-page="./Results" class="form-grid mb-3">
         <div>
-            <label asp-for="NewResult.StudentId" class="form-label">Student</label>
-            <select asp-for="NewResult.StudentId" class="form-select">
-                <option value="0">Choose student</option>
-                @foreach (var student in Model.Students)
+            <label asp-for="Search" class="form-label">Student ID or name</label>
+            <input asp-for="Search" type="search" class="form-control" />
+        </div>
+        <div>
+            <label asp-for="ProgrammeId" class="form-label">Programme</label>
+            <select asp-for="ProgrammeId" class="form-select">
+                <option value="">All programmes</option>
+                @foreach (var programme in Model.Programmes)
                 {
-                    <option value="@student.Id">@student.StudentNumber · @student.FullName</option>
+                    <option value="@programme.Id">@programme.Code · @programme.Name</option>
                 }
             </select>
         </div>
         <div>
-            <label asp-for="NewResult.CourseId" class="form-label">Course</label>
-            <select asp-for="NewResult.CourseId" class="form-select">
-                <option value="0">Choose confirmed course</option>
-                @foreach (var course in Model.Courses)
+            <label asp-for="YearOfStudy" class="form-label">Year of study</label>
+            <select asp-for="YearOfStudy" class="form-select">
+                <option value="">All years</option>
+                @foreach (var year in Model.StudyYears)
                 {
-                    <option value="@course.Id">@course.Code · @course.Title</option>
+                    <option value="@year">Year @year</option>
                 }
             </select>
         </div>
-        <div>
-            <label asp-for="NewResult.Mark" class="form-label">Mark (%)</label>
-            <input asp-for="NewResult.Mark" class="form-control" type="number" min="0" max="100" step="0.1" />
+        <div class="align-self-end">
+            <button class="btn btn-primary" type="submit">Search students</button>
+            <a class="btn btn-outline-primary" asp-page="./Results">Clear filters</a>
         </div>
-        <div class="form-grid-full"><button class="btn btn-primary" type="submit">Save unpublished result</button></div>
     </form>
+
+    @if (Model.Students.Count == 0)
+    {
+        <p class="muted-copy">No students match your search and filters.</p>
+    }
+    else
+    {
+        <form method="get" asp-page="./Results" class="form-grid mb-3">
+            <input name="Search" value="@Model.Search" type="hidden" />
+            <input name="ProgrammeId" value="@Model.ProgrammeId" type="hidden" />
+            <input name="YearOfStudy" value="@Model.YearOfStudy" type="hidden" />
+            <div>
+                <label for="resultStudent" class="form-label">Student</label>
+                <select id="resultStudent" name="studentId" class="form-select" required>
+                    <option value="">Choose student</option>
+                    @foreach (var student in Model.Students)
+                    {
+                        <option value="@student.Id" selected="@(student.Id == Model.NewResult.StudentId)">
+                            @student.StudentNumber · @student.FullName
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="align-self-end">
+                <button class="btn btn-outline-primary" type="submit">Load registered courses</button>
+            </div>
+        </form>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @if (Model.NewResult.StudentId > 0 && Model.Courses.Count == 0)
+    {
+        <p class="muted-copy">This student has no confirmed course registrations for the current term.</p>
+    }
+    else if (Model.Courses.Count > 0)
+    {
+        var selectedStudent = Model.Students.SingleOrDefault(student => student.Id == Model.NewResult.StudentId);
+        <form method="post" asp-page-handler="Record" class="form-grid">
+            <input asp-for="NewResult.StudentId" type="hidden" />
+            <input name="Search" value="@Model.Search" type="hidden" />
+            <input name="ProgrammeId" value="@Model.ProgrammeId" type="hidden" />
+            <input name="YearOfStudy" value="@Model.YearOfStudy" type="hidden" />
+            <p class="form-grid-full mb-0">Entering a result for <strong>@selectedStudent?.FullName</strong></p>
+            <div>
+                <label asp-for="NewResult.CourseId" class="form-label">Registered course</label>
+                <select asp-for="NewResult.CourseId" class="form-select" required>
+                    <option value="">Choose course</option>
+                    @foreach (var course in Model.Courses)
+                    {
+                        <option value="@course.Id">@course.Code · @course.Title</option>
+                    }
+                </select>
+                <span asp-validation-for="NewResult.CourseId" class="text-danger"></span>
+            </div>
+            <div>
+                <label asp-for="NewResult.Mark" class="form-label">Mark (%)</label>
+                <input asp-for="NewResult.Mark" class="form-control" type="number" min="0" max="100" step="0.1" required />
+                <span asp-validation-for="NewResult.Mark" class="text-danger"></span>
+            </div>
+            <div class="form-grid-full"><button class="btn btn-primary" type="submit">Save unpublished result</button></div>
+        </form>
+    }
 </section>
 
 <section class="card-surface">

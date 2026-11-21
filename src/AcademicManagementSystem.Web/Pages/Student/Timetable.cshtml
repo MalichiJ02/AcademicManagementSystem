@@ -32,7 +32,7 @@ else
                             <td><strong>@entry.Course.Code</strong><br /><span class="muted-copy">@entry.Course.Title</span></td>
                             <td>@entry.ScheduleLabel</td>
                             <td>@entry.Room.Code · @entry.Room.Name</td>
-                            <td>@entry.Lecturer.FullName</td>
+                            <td>@(entry.Lecturer?.FullName ?? "Lecturer pending")</td>
                         </tr>
                     }
                 </tbody>

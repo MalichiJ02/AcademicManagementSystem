@@ -1,10 +1,22 @@
+@{
+    var currentPage = ViewContext.RouteData.Values["page"] as string;
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var workspace = currentPage?.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() switch
+    {
+        "Admin" => "Administration",
+        "Coordinator" => "Coordination",
+        "Student" => "Student",
+        _ => null
+    };
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Intelligent Academic Management System with Timetable Optimization prototype." />
+    <meta name="description" content="Course registration, academic records and timetables." />
     <title>@ViewData["Title"] · Academic Management System</title>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -13,35 +25,11 @@
 <body>
     <header class="site-header">
         <div class="container app-container header-content">
-            <a class="brand" asp-page="/Index">
-                <span class="brand-mark">AM</span>
-                <span>
-                    <strong>Academic Management System</strong>
-                    <small>Intelligent academic workflow prototype</small>
-                </span>
-            </a>
-            <nav class="site-nav" aria-label="Primary navigation">
-                @if (User.Identity?.IsAuthenticated == true)
+            <a class="brand" asp-page="/Index">Academic Management System</a>
+            <div class="workspace-account">
+                <button id="themeToggle" type="button" class="nav-button theme-toggle" aria-pressed="false">Dark mode</button>
+                @if (signedIn)
                 {
-                    @if (User.IsInRole("Administrator"))
-                    {
-                        <a asp-page="/Admin/Index">Administration</a>
-                        <a asp-page="/Admin/Students">Students</a>
-                        <a asp-page="/Admin/Academic">Academic setup</a>
-                        <a asp-page="/Admin/Finance">Finance</a>
-                        <a asp-page="/Admin/Users">Staff accounts</a>
-                    }
-                    @if (User.IsInRole("Coordinator") || User.IsInRole("Administrator"))
-                    {
-                        <a asp-page="/Coordinator/Index">Coordinator</a>
-                        <a asp-page="/Coordinator/Timetable">Timetable</a>
-                    }
-                    @if (User.IsInRole("Student"))
-                    {
-                        <a asp-page="/Student/Index">My dashboard</a>
-                        <a asp-page="/Student/Registration">Registration</a>
-                        <a asp-page="/Student/Invoices">Invoices</a>
-                    }
                     <form asp-page="/Account/Logout" method="post" class="logout-form">
                         <button type="submit" class="nav-button">Sign out</button>
                     </form>
@@ -50,13 +38,78 @@
                 {
                     <a asp-page="/Account/Login">Sign in</a>
                 }
-                <span class="prototype-badge">Prototype</span>
-            </nav>
+            </div>
         </div>
     </header>
 
-    <main class="app-main">
+    <div class="@(signedIn ? "workspace-shell" : "public-shell")">
+    @if (signedIn)
+    {
+        <nav class="workspace-nav" aria-label="Workspaces">
+            @if (User.IsInRole("Administrator"))
+            {
+                <div class="workspace-nav-group">
+                    <h2>Administration</h2>
+                    <a asp-page="/Admin/Index" aria-current="@(currentPage == "/Admin/Index" ? "page" : null)">Overview</a>
+                    <a asp-page="/Admin/Students" aria-current="@(currentPage == "/Admin/Students" ? "page" : null)">Students</a>
+                    <a asp-page="/Admin/Academic" asp-route-section="rules"
+                       class="@(currentPage == "/Admin/Academic" ? "workspace-parent-active" : null)">Academic setup</a>
+                    @if (currentPage == "/Admin/Academic")
+                    {
+                        var selectedTab = ViewData["AcademicSection"] as string ?? "rules";
+                        var academicTabs = new (string Key, string Label)[]
+                        {
+                            ("rules", "Term & rules"), ("schools", "Schools"),
+                            ("programmes", "Programmes"), ("study-modes", "Study modes"),
+                            ("courses", "Courses"), ("resources", "Lecturers"),
+                            ("rooms", "Rooms"), ("imports", "CSV imports")
+                        };
+                        <div class="workspace-subnav" role="group" aria-label="Academic setup sections">
+                            @foreach (var tab in academicTabs)
+                            {
+                                <a asp-page="/Admin/Academic" asp-route-section="@tab.Key"
+                                   aria-current="@(selectedTab == tab.Key ? "page" : null)">@tab.Label</a>
+                            }
+                        </div>
+                    }
+                    <a asp-page="/Admin/Finance" aria-current="@(currentPage == "/Admin/Finance" ? "page" : null)">Finance</a>
+                    <a asp-page="/Admin/Users" aria-current="@(currentPage == "/Admin/Users" ? "page" : null)">Staff accounts</a>
+                </div>
+            }
+            @if (User.IsInRole("Coordinator") || User.IsInRole("Administrator"))
+            {
+                <div class="workspace-nav-group">
+                    <h2>Coordination</h2>
+                    <a asp-page="/Coordinator/Index" aria-current="@(currentPage == "/Coordinator/Index" ? "page" : null)">Overview</a>
+                    <a asp-page="/Coordinator/Timetable" aria-current="@(currentPage == "/Coordinator/Timetable" ? "page" : null)">Timetable</a>
+                    <a asp-page="/Coordinator/Results" aria-current="@(currentPage == "/Coordinator/Results" ? "page" : null)">Results</a>
+                    <a asp-page="/Coordinator/Attendance" aria-current="@(currentPage == "/Coordinator/Attendance" ? "page" : null)">Attendance</a>
+                    <a asp-page="/Coordinator/Students" aria-current="@(currentPage == "/Coordinator/Students" ? "page" : null)">Students</a>
+                    <a asp-page="/Coordinator/Monitoring" aria-current="@(currentPage == "/Coordinator/Monitoring" ? "page" : null)">Monitoring</a>
+                </div>
+            }
+            @if (User.IsInRole("Student"))
+            {
+                <div class="workspace-nav-group">
+                    <h2>Student</h2>
+                    <a asp-page="/Student/Index" aria-current="@(currentPage == "/Student/Index" ? "page" : null)">My dashboard</a>
+                    <a asp-page="/Student/Registration" aria-current="@(currentPage == "/Student/Registration" ? "page" : null)">Registration</a>
+                    <a asp-page="/Student/Timetable" aria-current="@(currentPage == "/Student/Timetable" ? "page" : null)">Timetable</a>
+                    <a asp-page="/Student/Attendance" aria-current="@(currentPage == "/Student/Attendance" ? "page" : null)">Attendance</a>
+                    <a asp-page="/Student/Invoices" aria-current="@(currentPage == "/Student/Invoices" ? "page" : null)">Invoices</a>
+                    <a asp-page="/Student/ExamSlip" aria-current="@(currentPage == "/Student/ExamSlip" ? "page" : null)">Exam slip</a>
+                    <a asp-page="/Student/Results" aria-current="@(currentPage == "/Student/Results" ? "page" : null)">Results</a>
+                </div>
+            }
+        </nav>
+    }
+
+    <main class="app-main" id="main-content">
         <div class="container app-container">
+            @if (workspace is not null)
+            {
+                <p class="workspace-location">@workspace <span aria-hidden="true"> / </span> @ViewData["Title"]</p>
+            }
             @if (TempData["Success"] is string success)
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -74,11 +127,12 @@
             @RenderBody()
         </div>
     </main>
+    </div>
 
     <footer class="site-footer">
         <div class="container app-container">
             <span>CS301 Group Project · 2026</span>
-            <span>Prototype only · no live CBU or payment-system integration</span>
+            <span>Copperbelt University project</span>
         </div>
     </footer>
 

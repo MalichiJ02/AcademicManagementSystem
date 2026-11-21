@@ -15,7 +15,6 @@ else
 {
     <section class="page-heading">
         <div>
-            <p class="section-kicker">Student portal</p>
             <h1>Welcome, @Model.Student.FirstName</h1>
             <p>@Model.Student.StudentNumber · @Model.Student.Programme · @Model.Student.StudyMode · Year @Model.Student.YearOfStudy</p>
         </div>
@@ -60,7 +59,6 @@ else
             }
         </article>
         <article class="card-surface action-card">
-            <p class="section-kicker">Registration</p>
             <h2>@(Model.RegistrationAccess?.Allowed == true ? "Course selection is available" : "Check your requirements")</h2>
             @if (Model.RegistrationAccess?.Allowed == true)
             {
@@ -104,19 +102,16 @@ else
 
     <section class="insight-grid">
         <article class="card-surface insight-card">
-            <p class="section-kicker">My timetable</p>
             <h2>@Model.Registrations.Count confirmed course(s)</h2>
             <p>View the personal timetable created from your confirmed registration.</p>
             <a class="text-link" asp-page="/Student/Timetable">Open timetable</a>
         </article>
         <article class="card-surface insight-card">
-            <p class="section-kicker">Attendance</p>
             <h2>@(Model.Attendance?.AttendancePercentage is null ? "No sessions yet" : $"{Model.Attendance.AttendancePercentage:N0}% attendance")</h2>
             <p>Attendance information is visible only for your own account.</p>
             <a class="text-link" asp-page="/Student/Attendance">View attendance</a>
         </article>
         <article class="card-surface insight-card">
-            <p class="section-kicker">Academic support</p>
             <h2>@(Model.RiskAssessment?.Level ?? "No") risk indicator</h2>
             <p>@(Model.RiskAssessment?.Reasons.FirstOrDefault() ?? "No academic monitoring data is available yet.")</p>
         </article>

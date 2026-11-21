@@ -8,6 +8,7 @@ public sealed class AcademicManagementDbContext(
 {
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Programme> Programmes => Set<Programme>();
+    public DbSet<School> Schools => Set<School>();
     public DbSet<StudyMode> StudyModes => Set<StudyMode>();
     public DbSet<AcademicSettings> AcademicSettings => Set<AcademicSettings>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
@@ -57,8 +58,17 @@ public sealed class AcademicManagementDbContext(
             entity.Property(programme => programme.Code).HasMaxLength(30).IsRequired();
             entity.Property(programme => programme.Name).HasMaxLength(160).IsRequired();
             entity.Property(programme => programme.TuitionAmount).HasPrecision(18, 2);
+            entity.HasOne(programme => programme.School)
+    .WithMany(school => school.Programmes)
+    .HasForeignKey(programme => programme.SchoolId)
+    .OnDelete(DeleteBehavior.Restrict);
         });
-
+modelBuilder.Entity<School>(entity =>
+{
+    entity.HasIndex(school => school.Code).IsUnique();
+    entity.Property(school => school.Code).HasMaxLength(30).IsRequired();
+    entity.Property(school => school.Name).HasMaxLength(160).IsRequired();
+});
         modelBuilder.Entity<StudyMode>(entity =>
         {
             entity.HasIndex(studyMode => studyMode.Name).IsUnique();
@@ -251,11 +261,11 @@ public sealed class AcademicManagementDbContext(
         modelBuilder.Entity<TimetableEntry>(entity =>
         {
             entity.HasIndex(entry => new
-            {
-                entry.CourseId,
-                entry.AcademicYear,
-                entry.Semester
-            }).IsUnique();
+{
+    entry.CourseId,
+    entry.AcademicYear,
+    entry.Semester
+});
 
             entity.Property(entry => entry.AcademicYear).HasMaxLength(20).IsRequired();
             entity.Property(entry => entry.Semester).HasMaxLength(40).IsRequired();
